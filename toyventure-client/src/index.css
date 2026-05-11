@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================
+   GLOBAL TYPOGRAPHY (FREDOKA & NUNITO)
+   ========================================== */
+@layer base {
+  body {
+    @apply font-sans text-zinc-800 bg-surface overflow-x-hidden w-full;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  input, textarea, button, select {
+    @apply font-sans;
+  }
+}
+
+/* ==========================================
+   YOUR CUSTOM STYLES
+   ========================================== */
+html {
+  scroll-behavior: smooth;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.tonal-shift-no-border {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+}
+
+.doodle-bg {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L32 15 L42 17 L32 19 L30 29 L28 19 L18 17 L28 15 Z' fill='%23ff5c00' fill-opacity='0.05'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%23635880' fill-opacity='0.05'/%3E%3Cpath d='M5 45 Q 15 35 25 45 T 45 45' stroke='%23e71621' stroke-width='2' fill='none' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* ================== MERGED UI STYLES ================== */
+
+@layer components {
+  .card-surface {
+    @apply bg-white/95 border border-white/80 shadow-card dark:border-white/10 dark:bg-zinc-900/90;
+  }
+  
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-md border border-white/70 shadow-card;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .reveal-section {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0) scale(0.985);
+    transition: opacity 700ms ease-out, transform 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+
+  .reveal-section.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .float-soft {
+    animation: floatSoft 6s ease-in-out infinite;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatSoft {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.pause-marquee:hover .animate-marquee {
+  animation-play-state: paused;
+}
+@keyframes floatSlow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-floatSlow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+/* ================= CLOUD ANIMATION ================= */
+
+.cloud {
+  position: absolute;
+  opacity: 0.15; /* Kept subtle so it doesn't distract from the links */
+}
+
+/* Individual clouds */
+.cloud1 {
+  top: 40px;
+  width: 120px;
+  animation: moveCloud 45s linear infinite, floatCloud 6s ease-in-out infinite;
+}
+
+.cloud2 {
+  top: 150px;
+  width: 90px;
+  animation: moveCloud 60s linear infinite, floatCloud 7s ease-in-out infinite;
+  animation-delay: -15s;
+}
+
+.cloud3 {
+  top: 80px;
+  width: 140px;
+  animation: moveCloud 75s linear infinite, floatCloud 8s ease-in-out infinite;
+  animation-delay: -30s;
+}
+
+/* --- New Clouds --- */
+.cloud4 {
+  top: 200px;
+  width: 80px;
+  animation: moveCloud 50s linear infinite, floatCloud 5s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+.cloud5 {
+  top: 30px;
+  width: 160px;
+  animation: moveCloud 85s linear infinite, floatCloud 9s ease-in-out infinite;
+  animation-delay: -45s;
+}
+
+/* Horizontal movement using 'left' avoids overriding the 'transform' floating effect */
+@keyframes moveCloud {
+  0% { left: -200px; }
+  100% { left: 100vw; }
+}
+
+/* Slight floating using transform */
+@keyframes floatCloud {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+/* ================= UTILITIES ================= */
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+/* ================= SWIPER HERO CUSTOMIZATION ================= */
+.hero-swiper {
+  padding-bottom: 0px !important; /* Remove bottom padding if using effect-fade */
+}
+
+/* Make navigation buttons small, round, and elegant */
+.hero-swiper .swiper-button-next,
+.hero-swiper .swiper-button-prev {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #dc2626 !important; /* Tailwind red-600 */
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(4px) !important;
+  transition: all 0.3s ease;
+}
+
+.hero-swiper .swiper-button-next:hover,
+.hero-swiper .swiper-button-prev:hover {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+  transform: scale(1.1);
+}
+
+/* Make the actual arrow icon inside the button smaller */
+.hero-swiper .swiper-button-next::after,
+.hero-swiper .swiper-button-prev::after {
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+/* Red active dot for pagination */
+.hero-swiper .swiper-pagination-bullet-active {
+  background-color: #dc2626 !important;
+}

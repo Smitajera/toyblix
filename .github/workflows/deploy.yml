@@ -1,0 +1,93 @@
+name: Deploy to EC2
+# TEMPORARILY DISABLED: Change 'deploy-production' back to 'main' to re-enable auto-deploy
+on:
+  push:
+    branches:
+      - deploy-production
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node Env
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── Security Audits (non-blocking warnings) ───────────────────────
+      - name: Security Audit — Backend
+        continue-on-error: true
+        run: |
+          cd toyventure-server
+          npm install --legacy-peer-deps --silent
+          npm audit --audit-level=critical || echo "⚠️ Audit warnings found"
+
+      - name: Security Audit — Frontend
+        continue-on-error: true
+        run: |
+          cd toyventure-client
+          npm install --legacy-peer-deps --silent
+          npm audit --audit-level=critical || echo "⚠️ Audit warnings found"
+
+      # ── Deploy via SSH ────────────────────────────────────────────────
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # 1. Sync code (node_modules is kept intact by git reset)
+            cd /home/ubuntu/akshar_
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 2. Nginx SPA config
+            sudo cp /home/ubuntu/akshar_/nginx/default.conf /etc/nginx/sites-available/default
+            sudo nginx -t
+
+            # 3. Backend — smart install (only if package.json changed)
+            cd /home/ubuntu/akshar_/toyventure-server
+            SERVER_HASH=$(md5sum package.json | cut -d' ' -f1)
+            CACHED_SERVER_HASH=$(cat /tmp/.server_pkg_hash 2>/dev/null || echo "none")
+            if [ "$SERVER_HASH" != "$CACHED_SERVER_HASH" ]; then
+              echo "Backend packages changed — installing..."
+              npm install --legacy-peer-deps
+              echo "$SERVER_HASH" > /tmp/.server_pkg_hash
+            else
+              echo "Backend packages unchanged — skipping install"
+            fi
+            command -v pm2 &>/dev/null || npm install -g pm2
+            pm2 restart all || pm2 start server.js --name "toyblix-server"
+            pm2 save
+
+            # 4. Frontend — smart install + build
+            cd /home/ubuntu/akshar_/toyventure-client
+            CLIENT_HASH=$(md5sum package.json | cut -d' ' -f1)
+            CACHED_CLIENT_HASH=$(cat /tmp/.client_pkg_hash 2>/dev/null || echo "none")
+            if [ "$CLIENT_HASH" != "$CACHED_CLIENT_HASH" ]; then
+              echo "Frontend packages changed — installing..."
+              npm install --legacy-peer-deps
+              echo "$CLIENT_HASH" > /tmp/.client_pkg_hash
+            else
+              echo "Frontend packages unchanged — skipping install"
+            fi
+
+            echo "Building frontend..."
+            npm run build
+            ls dist/
+
+            # 5. Deploy to nginx
+            sudo rm -rf /var/www/html/*
+            sudo cp -r dist/. /var/www/html/
+            sudo systemctl restart nginx
+            echo "✅ Deployed Successfully!"
