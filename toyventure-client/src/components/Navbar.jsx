@@ -286,7 +286,7 @@ const Navbar = () => {
             {!isAdmin && (
               <form
                 onSubmit={handleSearchSubmit}
-                className={`group hidden lg:flex items-center h-12 w-[270px] xl:w-[340px] rounded-full border p-1.5 pl-3 transition-all duration-300 focus-within:ring-4 ${
+                className={`group hidden lg:flex items-center h-12 flex-1 max-w-[280px] xl:max-w-[340px] rounded-full border p-1.5 pl-3 transition-all duration-300 focus-within:ring-4 ${
                   isScrolled
                     ? 'bg-white border-white/80 shadow-lg shadow-red-950/10 focus-within:ring-white/20'
                     : 'bg-white/95 border-slate-200 shadow-sm shadow-slate-200/60 focus-within:border-red-200 focus-within:ring-red-100/60'
@@ -320,10 +320,10 @@ const Navbar = () => {
             )}
 
             {/* Right: Icons & Profile */}
-            <div className="flex items-center gap-2 z-20">
+            <div className="flex items-center gap-1 sm:gap-2 z-20 shrink-0">
               
               {/* Desktop Support Number */}
-              <a href="tel:+919601697603" className={`hidden lg:flex items-center border rounded-full py-1.5 px-4 mr-2 transition-colors duration-300 hover:opacity-80 ${isScrolled ? 'bg-red-800/50 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
+              <a href="tel:+919601697603" className={`hidden xl:flex items-center border rounded-full py-1.5 px-4 transition-colors duration-300 hover:opacity-80 shrink-0 ${isScrolled ? 'bg-red-800/50 border-red-700/50' : 'bg-red-50 border-red-200'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 shrink-0 ${isScrolled ? 'bg-white/20' : 'bg-red-500/20'}`}>
                   <span className={`material-symbols-outlined text-[18px] ${isScrolled ? 'text-white' : 'text-red-600'}`}>phone_in_talk</span>
                 </div>
@@ -334,7 +334,7 @@ const Navbar = () => {
               </a>
               
               {/* Favorites Icon */}
-              <Link to="/favorites" className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 hidden sm:flex ${
+              <Link to="/favorites" className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 hidden sm:flex shrink-0 ${
                 isScrolled ? 'text-white hover:bg-red-800' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
               }`}>
                 <span className="material-symbols-outlined text-[22px]">favorite</span>
@@ -420,7 +420,7 @@ const Navbar = () => {
               )}
 
               {/* Cart Icon */}
-              <Link to="/cart" className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 ${
+              <Link to="/cart" className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 shrink-0 ${
                 isScrolled ? 'text-white hover:bg-red-800' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
               }`}>
                 <span className="material-symbols-outlined text-[22px]">shopping_cart</span>

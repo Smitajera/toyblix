@@ -177,23 +177,23 @@ const createRazorpayOrder = async (req, res, next) => {
     const normalizedOrderItems = normalizeOrderItems(orderItems);
     await assertInventoryAvailable(normalizedOrderItems);
 
-    const razorpay = getRazorpayClient();
-    const receipt = buildReceipt(req.user._id);
-    const razorpayOrder = await razorpay.orders.create({
-      amount: Math.round(Number(totalPrice) * 100),
-      currency: 'INR',
-      receipt,
-      notes: {
-        userId: String(req.user._id),
-        requestId: req.requestId,
-      },
-    });
-
     let pointsUsed = 0;
-    let pointsEarned = 10; // 10 points per order
+    let pointsEarned = 10; // 10 points for prepaid order
+
+    // Apply Tiered Prepaid Discount (10% for 500-2000, 15% for > 2000)
+    let autoDiscount = 0;
+    const basePrice = Number(totalPrice) + (Number(discountAmount) || 0); 
+    
+    if (basePrice >= 500 && basePrice <= 2000) {
+      autoDiscount = Math.round(basePrice * 0.10);
+    } else if (basePrice > 2000) {
+      autoDiscount = Math.round(basePrice * 0.15);
+    }
+
+    const finalTotalPriceBeforePoints = Math.max(0, Number(totalPrice) - autoDiscount);
 
     if (usePoints && !couponCode && Number(usePoints) > 0) {
-      const requestedPoints = Number(usePoints);
+      const requestedPoints = Math.min(Number(usePoints), 50); // Max 50 points per order
       if (req.user.points >= requestedPoints) {
         req.user.points -= requestedPoints;
         pointsUsed = requestedPoints;
@@ -202,13 +202,27 @@ const createRazorpayOrder = async (req, res, next) => {
       }
     }
 
+    const finalOrderTotal = Number(finalTotalPriceBeforePoints - pointsUsed);
+
+    const razorpay = getRazorpayClient();
+    const receipt = buildReceipt(req.user._id);
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(finalOrderTotal * 100),
+      currency: 'INR',
+      receipt,
+      notes: {
+        userId: String(req.user._id),
+        requestId: req.requestId,
+      },
+    });
+
     await req.user.save();
 
     const localOrder = await Order.create({
       user: req.user._id,
       orderItems: normalizedOrderItems,
       shippingDetails,
-      totalPrice: Number(totalPrice),
+      totalPrice: finalOrderTotal,
       currency: 'INR',
       paymentMethod: 'razorpay',
       orderStatus: 'pending_payment',
@@ -218,7 +232,7 @@ const createRazorpayOrder = async (req, res, next) => {
       deliveryFee: Number(deliveryFee) || 0,
       giftWrapFee: Number(giftWrapFee) || 0,
       codFee: Number(codFee) || 0,
-      discountAmount: Number(discountAmount) || 0,
+      discountAmount: (Number(discountAmount) || 0) + autoDiscount,
       pointsUsed,
       pointsEarned,
       razorpay: {

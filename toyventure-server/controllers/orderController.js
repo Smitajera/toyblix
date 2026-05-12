@@ -29,10 +29,10 @@ const normalizeOrderItemImages = (orderItems) =>
         }
 
         let pointsUsed = 0;
-        let pointsEarned = 10; // 10 points per order
+        let pointsEarned = 5; // 5 points for COD order
 
         if (usePoints && !couponCode && Number(usePoints) > 0) {
-            const requestedPoints = Number(usePoints);
+            const requestedPoints = Math.min(Number(usePoints), 50); // Max 50 points per order
             if (req.user.points >= requestedPoints) {
                 req.user.points -= requestedPoints;
                 pointsUsed = requestedPoints;
@@ -41,13 +41,15 @@ const normalizeOrderItemImages = (orderItems) =>
             }
         }
 
+        const finalOrderTotal = Number(totalPrice) - pointsUsed;
+
         await req.user.save();
 
         const order = new Order({
             user: req.user._id,
             orderItems: normalizeOrderItemImages(orderItems),
             shippingDetails,
-            totalPrice,
+            totalPrice: finalOrderTotal,
             paymentMethod: 'cod',
             orderStatus: 'confirmed', // COD orders are confirmed right away
             paymentStatus: 'pending', // Pending until delivery boy collects cash
