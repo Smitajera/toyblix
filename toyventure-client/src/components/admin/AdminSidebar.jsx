@@ -12,7 +12,8 @@ const NAV_ITEMS = [
 
 const AdminSidebar = ({ activeTab, setActiveTab, badges = {} }) => (
   <div className="w-full lg:w-[280px] shrink-0">
-    <div className="bg-white/60 backdrop-blur-md p-4 rounded-[2rem] border border-red-50 shadow-sm flex flex-col gap-2 sticky top-32">
+    <div className="bg-white/60 backdrop-blu
+    r-md p-4 rounded-[2rem] border border-red-50 shadow-sm flex flex-col gap-2 sticky top-32">
       {NAV_ITEMS.map(({ key, icon, label }) => {
         const badgeCount = badges[key];
         const badgeColor = key === 'returns' ? 'bg-orange-500' : 'bg-red-600';

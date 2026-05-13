@@ -198,7 +198,14 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats row */}
-        <AdminStatsBar totalRevenue={totalRevenue} totalOrders={totalOrders} pendingOrders={pendingOrders} />
+        <AdminStatsBar 
+          totalRevenue={totalRevenue} 
+          totalOrders={totalOrders} 
+          pendingOrders={pendingOrders} 
+          orders={orders} 
+          users={users} 
+          setActiveTab={setActiveTab} 
+        />
 
         {/* Sidebar + content */}
         <div className="flex flex-col lg:flex-row gap-8 w-full">

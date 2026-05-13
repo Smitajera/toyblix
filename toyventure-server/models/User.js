@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
     street: String,
     landmark: String,
     city: String,
+    state: String,
     pincode: String,
     isDefault: { type: Boolean, default: false }
   }],

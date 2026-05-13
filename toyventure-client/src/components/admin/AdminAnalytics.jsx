@@ -6,6 +6,15 @@ import { getOrderItemProductId } from './utils/adminHelpers';
 
 echarts.registerMap('India', indiaGeoJson);
 
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", 
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", 
+  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", 
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", 
+  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
+
 const TOOLTIP_STYLE = {
   backgroundColor: 'rgba(255,255,255,0.95)',
   borderColor: '#fee2e2',
@@ -72,6 +81,9 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
     const revenueData = Object.keys(revenueDataMap).map(date => ({ date, Revenue: revenueDataMap[date] }));
 
     const topToysMap = {}, categoryMap = {}, cityMap = {}, areaMap = {}, userOrdersMap = {};
+    
+    // Initialize areaMap with all states to avoid NaN in tooltips
+    INDIAN_STATES.forEach(s => (areaMap[s] = 0));
 
     orders.forEach(order => {
       const uid = order.user
@@ -86,8 +98,20 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
       }
       if (order.shippingDetails?.state && isPaid) {
         let s = order.shippingDetails.state.trim();
+        // Handle variations or normalization if needed, but dropdown in checkout should keep it clean
+        // Just normalize casing to be safe
         s = s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-        areaMap[s] = (areaMap[s] || 0) + 1;
+        
+        // Manual mapping for common misspellings or variations if necessary
+        if (s === 'Orissa') s = 'Odisha';
+        if (s === 'Uttarakhand') s = 'Uttarakhand'; // Standard
+        
+        if (areaMap.hasOwnProperty(s)) {
+          areaMap[s] = (areaMap[s] || 0) + 1;
+        } else {
+          // If state is not in our list, still track it but maybe it won't map correctly to GeoJSON
+          areaMap[s] = (areaMap[s] || 0) + 1;
+        }
       }
       if (isPaid) {
         order.orderItems?.forEach(item => {
@@ -275,7 +299,17 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
         <div className="h-[350px] w-full">
           <ReactECharts
             option={{
-              tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#bfdbfe', borderWidth: 1, textStyle: { fontWeight: 'bold' }, borderRadius: 16, formatter: '{b}<br/>Orders: {c}' },
+              tooltip: { 
+                trigger: 'item', 
+                backgroundColor: 'rgba(255,255,255,0.95)', 
+                borderColor: '#bfdbfe', 
+                borderWidth: 1, 
+                textStyle: { fontWeight: 'bold' }, 
+                borderRadius: 16, 
+                formatter: (params) => {
+                  return `${params.name}<br/>Orders: ${params.value || 0}`;
+                }
+              },
               visualMap: { min: 0, max: Math.max(...(analyticsData.areaData.length ? analyticsData.areaData.map(d => d.value) : [10])), left: 'left', top: 'bottom', text: ['High', 'Low'], calculable: true, inRange: { color: ['#eff6ff', '#3b82f6', '#1e3a8a'] } },
               series: [{ name: 'Orders', type: 'map', map: 'India', roam: true, itemStyle: { areaColor: '#eff6ff', borderColor: '#93c5fd' }, emphasis: { itemStyle: { areaColor: '#60a5fa' }, label: { show: true, color: '#fff' } }, data: analyticsData.areaData }]
             }}

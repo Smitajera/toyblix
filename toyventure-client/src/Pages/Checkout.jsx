@@ -52,6 +52,15 @@ const createCheckoutRequestKey = () => {
   return `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", 
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", 
+  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", 
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", 
+  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
+
 const Checkout = () => {
   const cartItems = useSelector((state) => state.cart.cartItems);
   const dispatch = useDispatch();
@@ -73,6 +82,7 @@ const Checkout = () => {
     street: '',
     landmark: '',
     city: '',
+    state: '',
     pincode: '',
   });
 
@@ -85,6 +95,7 @@ const Checkout = () => {
       street: addressObj.street || '',
       landmark: addressObj.landmark || '',
       city: addressObj.city || '',
+      state: addressObj.state || '',
       pincode: String(addressObj.pincode || ''),
     }));
     // NEW: Added toast notification for address selection
@@ -106,6 +117,7 @@ const Checkout = () => {
           street: addressObj.street || '',
           landmark: addressObj.landmark || '',
           city: addressObj.city || '',
+          state: addressObj.state || '',
           pincode: String(addressObj.pincode || ''),
         };
       });
@@ -193,18 +205,19 @@ const Checkout = () => {
 
   const handleAutoSaveAddress = async () => {
     if (!profile) return;
-    const { flatNumber, street, landmark, city, pincode } = shippingDetails;
+    const { flatNumber, street, landmark, city, state, pincode } = shippingDetails;
     const currentAddresses = profile.addresses || [];
     
     const exists = currentAddresses.some(a => 
       a.flatNumber === flatNumber && 
       a.street === street && 
       a.city === city && 
+      a.state === state &&
       a.pincode === pincode
     );
 
     if (!exists) {
-      const newAddresses = [...currentAddresses, { flatNumber, street, landmark, city, pincode }].slice(-3);
+      const newAddresses = [...currentAddresses, { flatNumber, street, landmark, city, state, pincode }].slice(-3);
       try {
         await updateProfile({ name: profile.name, addresses: newAddresses }).unwrap();
       } catch (err) {
@@ -408,7 +421,9 @@ const Checkout = () => {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {profile.addresses.map((addr, idx) => {
-                    const isSelected = shippingDetails.flatNumber === (addr.flatNumber || '') && shippingDetails.street === (addr.street || '');
+                    const isSelected = shippingDetails.flatNumber === (addr.flatNumber || '') && 
+                                     shippingDetails.street === (addr.street || '') && 
+                                     shippingDetails.state === (addr.state || '');
                     return (
                       <button
                         key={idx}
@@ -421,7 +436,7 @@ const Checkout = () => {
                         }`}
                       >
                         <p className="font-bold text-zinc-800 text-sm line-clamp-1">{addr.flatNumber}, {addr.street}</p>
-                        <p className="text-xs text-zinc-500 mt-1">{addr.city} - {addr.pincode}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{addr.city}, {addr.state} - {addr.pincode}</p>
                       </button>
                     )
                   })}
@@ -462,6 +477,20 @@ const Checkout = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <label className="text-sm font-bold text-zinc-600 ml-1">State</label>
+                  <select 
+                    required 
+                    name="state" 
+                    value={shippingDetails.state} 
+                    onChange={handleInputChange} 
+                    className="w-full bg-white/60 p-4 border border-white rounded-2xl focus:ring-4 focus:ring-primary-container/20 outline-none transition-all shadow-inner font-medium text-zinc-800 appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select State</option>
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-zinc-600 ml-1">Pincode</label>
                   <input required type="text" name="pincode" value={shippingDetails.pincode} onChange={handleInputChange} pattern="[0-9]{6}" title="Please enter a valid 6-digit pincode" maxLength="6" className="w-full bg-white/60 p-4 border border-white rounded-2xl focus:ring-4 focus:ring-primary-container/20 outline-none transition-all shadow-inner font-medium text-zinc-800" placeholder="Your Pincode" />
                 </div>
@@ -471,7 +500,7 @@ const Checkout = () => {
                     onClick={() => setShippingDetails({
                       fullName: profile?.name || '',
                       phone: profile?.mobileNumber || '',
-                      flatNumber: '', street: '', landmark: '', city: '', pincode: ''
+                      flatNumber: '', street: '', landmark: '', city: '', state: '', pincode: ''
                     })}
                     className="flex items-center gap-2 text-sm font-bold text-zinc-500 hover:text-primary-container transition-colors px-3 py-2 rounded-lg hover:bg-primary-container/10"
                   >
