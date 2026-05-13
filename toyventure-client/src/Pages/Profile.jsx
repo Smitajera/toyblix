@@ -5,7 +5,6 @@ import {
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
   useGetAllContactMessagesQuery,
-  useRequestItemReturnMutation
 } from '../features/api/apiSlice';
 import toast from 'react-hot-toast';
 
@@ -199,21 +198,6 @@ const Profile = () => {
               </button>
             </div>
 
-            {/* Loyalty Points Card */}
-            <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-4 text-white shadow-md shadow-red-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-yellow-300 text-[22px]">stars</span>
-                  <span className="text-xs font-black uppercase tracking-widest text-red-100">ToyBlix Points</span>
-                </div>
-                <span className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full">1pt = ₹1</span>
-              </div>
-              <p className="text-3xl font-black mb-0.5">{(profile?.points || 0).toLocaleString('en-IN')}</p>
-              <p className="text-xs text-red-200 font-medium">points earned from orders</p>
-              <div className="mt-3 pt-3 border-t border-white/20">
-                <p className="text-[10px] text-red-200 font-bold">Earn 10 pts per order • 1 pt = ₹1 discount 🎉</p>
-              </div>
-            </div>
 
           </div>
         </div>
@@ -221,18 +205,6 @@ const Profile = () => {
         {/* Content Area */}
         <div className="md:col-span-8">
 
-          {/* Loyalty Points Banner (mobile only, top of content) */}
-          <div className="md:hidden bg-gradient-to-r from-red-600 to-red-800 rounded-3xl p-5 text-white shadow-md shadow-red-200 mb-6 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="material-symbols-outlined text-yellow-300 text-[20px]">stars</span>
-                <span className="text-xs font-black uppercase tracking-widest text-red-100">ToyBlix Points</span>
-              </div>
-              <p className="text-3xl font-black">{(profile?.points || 0).toLocaleString('en-IN')}</p>
-              <p className="text-[10px] text-red-200 font-bold mt-0.5">Earn 10 pts per order • 1 pt = ₹1 discount 🎉</p>
-            </div>
-            <span className="material-symbols-outlined text-[64px] text-white/20">emoji_events</span>
-          </div>
 
           {/* ORDERS TAB */}
           {activeTab === 'orders' && (
@@ -262,11 +234,7 @@ const Profile = () => {
                               <span className={`${fulfillMeta.className} text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 border shadow-sm`}>
                                 <span className="material-symbols-outlined text-[14px]">{fulfillMeta.icon}</span> {fulfillMeta.label}
                               </span>
-                              {order.pointsEarned > 0 && (
-                                <span className="bg-yellow-50 border-yellow-200 text-yellow-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 border shadow-sm">
-                                  <span className="material-symbols-outlined text-[14px]">stars</span> +{order.pointsEarned} pts
-                                </span>
-                              )}
+
                             </div>
                           </div>
 

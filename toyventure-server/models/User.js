@@ -44,8 +44,7 @@ const userSchema = new mongoose.Schema({
   wishlist: { type: Array, default: [] },
   isBanned: { type: Boolean, default: false },
   
-  // Loyalty Points
-  points: { type: Number, default: 0 }
+
   
 }, {
   timestamps: true,

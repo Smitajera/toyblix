@@ -18,7 +18,6 @@ const getUserProfile = async (req, res) => {
                 addresses: user.addresses,
                 cart: user.cart,
                 wishlist: user.wishlist,
-                points: user.points
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -62,7 +61,6 @@ const updateUserProfile = async (req, res) => {
                 addresses: updatedUser.addresses,
                 cart: updatedUser.cart,
                 wishlist: updatedUser.wishlist,
-                points: updatedUser.points
             });
         } else {
             res.status(404).json({ message: 'User not found' });

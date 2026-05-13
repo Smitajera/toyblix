@@ -257,9 +257,6 @@ const AdminOrderPanel = ({ orders, isUpdating, onViewDetails }) => {
                   </td>
                   <td className="p-5">
                     <p className="font-black text-red-950">₹{order.totalPrice}</p>
-                    {order.pointsUsed > 0 && (
-                      <p className="text-[10px] font-bold text-teal-600">-{order.pointsUsed} Pts</p>
-                    )}
                   </td>
                   <td className="p-5">
                     <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(order.orderStatus)}`}>

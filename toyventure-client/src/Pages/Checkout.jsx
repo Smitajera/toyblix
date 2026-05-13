@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useCreateRazorpayOrderMutation, 
-  useGetUserProfileQuery, 
-  useCreateDemoOrderMutation, 
-  useCreateCodOrderMutation, 
-  useUpdateUserProfileMutation, 
-  useValidateCouponMutation, 
-  useVerifyRazorpayPaymentMutation} 
-from "../features/api/apiSlice";
+import {
+  useCreateRazorpayOrderMutation,
+  useGetUserProfileQuery,
+  useCreateDemoOrderMutation,
+  useCreateCodOrderMutation,
+  useUpdateUserProfileMutation,
+  useValidateCouponMutation,
+  useVerifyRazorpayPaymentMutation
+}
+  from "../features/api/apiSlice";
 import { clearCart } from '../features/cart/cartSlice';
 
 const resolveImage = (imgPath) => {
@@ -53,11 +55,11 @@ const createCheckoutRequestKey = () => {
 };
 
 const INDIAN_STATES = [
-  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
-  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", 
-  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", 
-  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", 
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", 
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa",
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka",
+  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan",
   "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
 
@@ -69,11 +71,11 @@ const Checkout = () => {
   const [createRazorpayOrder, { isLoading: isCreatingOrder }] = useCreateRazorpayOrderMutation();
   const [verifyRazorpayPayment, { isLoading: isVerifyingPayment }] = useVerifyRazorpayPaymentMutation();
   const [createDemoOrder, { isLoading: isCreatingDemoOrder }] = useCreateDemoOrderMutation();
-  const [createCodOrder, { isLoading: isCreatingCodOrder }] = useCreateCodOrderMutation(); 
+  const [createCodOrder, { isLoading: isCreatingCodOrder }] = useCreateCodOrderMutation();
   const { data: profile } = useGetUserProfileQuery();
   const [updateProfile] = useUpdateUserProfileMutation();
 
-  const [showPointsPopup, setShowPointsPopup] = useState(false);
+
 
   const [shippingDetails, setShippingDetails] = useState({
     fullName: '',
@@ -106,8 +108,8 @@ const Checkout = () => {
     if (profile?.addresses?.length > 0) {
       setShippingDetails((prev) => {
         // Only auto-select if the user hasn't already started typing an address
-        if (prev.street !== '') return prev; 
-        
+        if (prev.street !== '') return prev;
+
         const addressObj = profile.addresses[0];
         return {
           ...prev,
@@ -132,19 +134,13 @@ const Checkout = () => {
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [showCouponDetails, setShowCouponDetails] = useState(false);
-  
+
   // Gift Wrap State
   const [isGiftWrapped, setIsGiftWrapped] = useState(false);
 
-  // Points State
-  const [usePoints, setUsePoints] = useState(0);
-  const userPoints = profile?.points || 0;
 
-  React.useEffect(() => {
-    if (appliedCoupon) {
-      setUsePoints(0);
-    }
-  }, [appliedCoupon]);
+
+
 
   const subtotalPrice = cartItems.reduce((acc, item) => {
     const price = parseFloat(item.price) || 0;
@@ -152,9 +148,8 @@ const Checkout = () => {
     return acc + price * qty;
   }, 0);
 
-  const maxPointsAllowed = Math.min(userPoints, Math.floor(subtotalPrice));
-  const pointsDiscount = (!appliedCoupon && usePoints > 0 && usePoints <= maxPointsAllowed) ? usePoints : 0;
-  const baseTotal = appliedCoupon ? appliedCoupon.finalTotal : (subtotalPrice - pointsDiscount);
+  const baseTotal = appliedCoupon ? appliedCoupon.finalTotal : subtotalPrice;
+
   const deliveryFee = baseTotal < 500 ? 50 : 0;
   const giftWrapFee = isGiftWrapped ? 50 : 0;
   const codFee = paymentMethod === 'cod' ? 50 : 0;
@@ -186,7 +181,7 @@ const Checkout = () => {
     toast('Coupon removed.', { icon: '🗑️' });
   };
 
-  const isBusy = isCreatingOrder || isVerifyingPayment || isCreatingDemoOrder || isCreatingCodOrder; 
+  const isBusy = isCreatingOrder || isVerifyingPayment || isCreatingDemoOrder || isCreatingCodOrder;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -207,11 +202,11 @@ const Checkout = () => {
     if (!profile) return;
     const { flatNumber, street, landmark, city, state, pincode } = shippingDetails;
     const currentAddresses = profile.addresses || [];
-    
-    const exists = currentAddresses.some(a => 
-      a.flatNumber === flatNumber && 
-      a.street === street && 
-      a.city === city && 
+
+    const exists = currentAddresses.some(a =>
+      a.flatNumber === flatNumber &&
+      a.street === street &&
+      a.city === city &&
       a.state === state &&
       a.pincode === pincode
     );
@@ -267,14 +262,13 @@ const Checkout = () => {
           }).unwrap();
 
           await handleAutoSaveAddress();
-          
+
+          await handleAutoSaveAddress();
+
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          setShowPointsPopup(true);
-          setTimeout(() => {
-            dispatch(clearCart());
-            setShowPointsPopup(false);
-            navigate('/profile');
-          }, 2500);
+          dispatch(clearCart());
+          navigate('/profile');
+
         } catch (error) {
           toast.error(error?.data?.message || 'Payment captured, but verification failed. Please contact support.');
         }
@@ -315,22 +309,18 @@ const Checkout = () => {
           deliveryFee,
           giftWrapFee,
           codFee,
-          discountAmount: appliedCoupon?.discount || pointsDiscount || 0,
+          discountAmount: appliedCoupon?.discount || 0,
           paymentMethod: 'cod',
           idempotencyKey: checkoutRequestKey,
           couponCode: appliedCoupon?.code || null,
-          usePoints: usePoints && !appliedCoupon,
+
         }).unwrap();
-        
+
         await handleAutoSaveAddress();
-        
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setShowPointsPopup(true);
-        setTimeout(() => {
-          dispatch(clearCart());
-          setShowPointsPopup(false);
-          navigate('/profile');
-        }, 2500);
+        dispatch(clearCart());
+        navigate('/profile');
         return;
       }
 
@@ -343,22 +333,18 @@ const Checkout = () => {
           deliveryFee,
           giftWrapFee,
           codFee,
-          discountAmount: appliedCoupon?.discount || pointsDiscount || 0,
+          discountAmount: appliedCoupon?.discount || 0,
           paymentMethod: 'demo',
           idempotencyKey: checkoutRequestKey,
           couponCode: appliedCoupon?.code || null,
-          usePoints: usePoints && !appliedCoupon,
+
         }).unwrap();
-        
+
         await handleAutoSaveAddress();
-        
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        setShowPointsPopup(true);
-        setTimeout(() => {
-          dispatch(clearCart());
-          setShowPointsPopup(false);
-          navigate('/profile');
-        }, 2500);
+        dispatch(clearCart());
+        navigate('/profile');
         return;
       }
 
@@ -370,10 +356,10 @@ const Checkout = () => {
         deliveryFee,
         giftWrapFee,
         codFee,
-        discountAmount: appliedCoupon?.discount || pointsDiscount || 0,
+        discountAmount: appliedCoupon?.discount || 0,
         paymentMethod: 'razorpay',
         idempotencyKey: checkoutRequestKey,
-        usePoints: usePoints && !appliedCoupon,
+
       }).unwrap();
 
       if (checkoutSession.order?.isPaid) {
@@ -421,19 +407,18 @@ const Checkout = () => {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {profile.addresses.map((addr, idx) => {
-                    const isSelected = shippingDetails.flatNumber === (addr.flatNumber || '') && 
-                                     shippingDetails.street === (addr.street || '') && 
-                                     shippingDetails.state === (addr.state || '');
+                    const isSelected = shippingDetails.flatNumber === (addr.flatNumber || '') &&
+                      shippingDetails.street === (addr.street || '') &&
+                      shippingDetails.state === (addr.state || '');
                     return (
                       <button
                         key={idx}
                         type="button"
                         onClick={() => handleSelectSavedAddress(addr)}
-                        className={`text-left p-3 rounded-xl border-2 transition-all ${
-                          isSelected 
-                            ? 'border-primary-container bg-primary-container/10 shadow-md' 
+                        className={`text-left p-3 rounded-xl border-2 transition-all ${isSelected
+                            ? 'border-primary-container bg-primary-container/10 shadow-md'
                             : 'border-transparent bg-white hover:border-primary-container/30 hover:shadow-md'
-                        }`}
+                          }`}
                       >
                         <p className="font-bold text-zinc-800 text-sm line-clamp-1">{addr.flatNumber}, {addr.street}</p>
                         <p className="text-xs text-zinc-500 mt-1">{addr.city}, {addr.state} - {addr.pincode}</p>
@@ -478,11 +463,11 @@ const Checkout = () => {
 
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-zinc-600 ml-1">State</label>
-                  <select 
-                    required 
-                    name="state" 
-                    value={shippingDetails.state} 
-                    onChange={handleInputChange} 
+                  <select
+                    required
+                    name="state"
+                    value={shippingDetails.state}
+                    onChange={handleInputChange}
                     className="w-full bg-white/60 p-4 border border-white rounded-2xl focus:ring-4 focus:ring-primary-container/20 outline-none transition-all shadow-inner font-medium text-zinc-800 appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Select State</option>
@@ -526,7 +511,7 @@ const Checkout = () => {
                 <span className="font-black text-zinc-800 text-lg">Cash on Delivery</span>
                 <span className="text-xs text-zinc-500 font-medium">Pay with cash when your package arrives at your doorstep.</span>
               </label>
-              
+
               <label className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col gap-2 shadow-sm hover:shadow-md ${paymentMethod === 'razorpay' ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60'}`}>
                 <div className="flex items-center justify-between">
                   <span className="material-symbols-outlined text-primary-container text-[28px]">account_balance_wallet</span>
@@ -647,159 +632,90 @@ const Checkout = () => {
                   </button>
                 </div>
               )}
-            </div>
-
-            <div className="border-t border-white mt-6 pt-5">
-              <label className="flex items-center gap-3 p-4 rounded-2xl border-2 border-white bg-white/60 cursor-pointer shadow-sm hover:shadow-md transition-all">
-                <input 
-                  type="checkbox" 
-                  checked={isGiftWrapped} 
-                  onChange={(e) => setIsGiftWrapped(e.target.checked)}
-                  className="w-5 h-5 text-primary-container focus:ring-primary-container rounded"
-                />
-                <div className="flex flex-col">
-                  <span className="font-bold text-sm text-zinc-800 tracking-wide flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px] text-zinc-600">redeem</span>
-                    Add a Gift Wrap (+Rs 50)
-                  </span>
-                  <span className="text-[10px] text-zinc-500 font-medium mt-0.5 ml-6">Beautifully wrapped toy ready to be gifted!</span>
-                </div>
-              </label>
-
-              {userPoints > 0 && maxPointsAllowed > 0 && (
-                <div className={`flex flex-col gap-3 p-4 rounded-2xl border-2 shadow-sm transition-all mt-3 ${appliedCoupon ? 'opacity-50 border-white bg-zinc-100' : (usePoints > 0 ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60')}`}>
-                  <div className="flex items-center justify-between">
+              <div className="border-t border-white mt-6 pt-5">
+                <label className="flex items-center gap-3 p-4 rounded-2xl border-2 border-white bg-white/60 cursor-pointer shadow-sm hover:shadow-md transition-all">
+                  <input
+                    type="checkbox"
+                    checked={isGiftWrapped}
+                    onChange={(e) => setIsGiftWrapped(e.target.checked)}
+                    className="w-5 h-5 text-primary-container focus:ring-primary-container rounded"
+                  />
+                  <div className="flex flex-col">
                     <span className="font-bold text-sm text-zinc-800 tracking-wide flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-yellow-500">toll</span>
-                      Redeem Loyalty Points
+                      <span className="material-symbols-outlined text-[18px] text-zinc-600">redeem</span>
+                      Add a Gift Wrap (+Rs 50)
                     </span>
-                    <span className="text-xs font-black text-primary-container bg-white px-2 py-1 rounded-md shadow-sm border border-primary-container/20">
-                      -₹{usePoints}
-                    </span>
+                    <span className="text-[10px] text-zinc-500 font-medium mt-0.5 ml-6">Beautifully wrapped toy ready to be gifted!</span>
                   </div>
-                  
-                  <div className="px-1 mt-2">
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max={maxPointsAllowed} 
-                      value={usePoints} 
-                      onChange={(e) => setUsePoints(Number(e.target.value))}
-                      disabled={!!appliedCoupon}
-                      className="w-full accent-primary-container cursor-pointer disabled:opacity-50"
-                    />
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-[10px] text-zinc-500 font-bold">0 pts</span>
-                      <span className="text-[10px] text-zinc-500 font-medium">
-                        {appliedCoupon ? 'Cannot be combined with promo codes.' : `Available: ${userPoints} pts`}
-                      </span>
-                      <span className="text-[10px] text-zinc-500 font-bold">{maxPointsAllowed} pts max</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-white mt-4 pt-4 space-y-3">
-              <div className="flex justify-between text-sm font-bold text-zinc-600">
-                <span>Subtotal</span>
-                <span>Rs {subtotalPrice.toLocaleString('en-IN')}</span>
+                </label>
               </div>
-              {appliedCoupon && (
-                <div className="flex justify-between text-sm font-bold text-green-600">
-                  <span>Discount ({appliedCoupon.code})</span>
-                  <span>- Rs {appliedCoupon.discount.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-              {usePoints > 0 && !appliedCoupon && (
-                <div className="flex justify-between text-sm font-bold text-green-600">
-                  <span>Loyalty Points Redeemed</span>
-                  <span>- Rs {pointsDiscount.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-              {isGiftWrapped && (
+              <div className="border-t border-white mt-4 pt-4 space-y-3">
                 <div className="flex justify-between text-sm font-bold text-zinc-600">
-                  <span>Gift Wrap</span>
-                  <span>+ Rs 50</span>
+                  <span>Subtotal</span>
+                  <span>Rs {subtotalPrice.toLocaleString('en-IN')}</span>
                 </div>
-              )}
-              {codFee > 0 && (
-                <div className="flex justify-between text-sm font-bold text-zinc-600">
-                  <span>COD Handling Fee</span>
-                  <span>+ Rs 50</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm font-bold text-zinc-600">
-                <span>Shipping {deliveryFee > 0 ? '(Under Rs 500)' : ''}</span>
-                {deliveryFee === 0 ? (
-                  <span className="text-green-600">Free</span>
-                ) : (
-                  <span>+ Rs {deliveryFee}</span>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm font-bold text-green-600">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span>- Rs {appliedCoupon.discount.toLocaleString('en-IN')}</span>
+                  </div>
                 )}
-              </div>
-              <div className="flex justify-between items-end pt-4">
-                <span className="text-lg font-bold text-zinc-800">Total Due</span>
-                <div className="text-right">
-                  {appliedCoupon && <span className="text-sm text-zinc-400 line-through block">Rs {subtotalPrice.toLocaleString('en-IN')}</span>}
-                  <span className="text-3xl font-black text-primary-container">Rs {totalPrice.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-            </div>
 
-            <button
-              type="submit"
-              form="checkout-form"
-              disabled={isBusy}
-              className={`w-full py-4 mt-8 text-white font-black text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl disabled:opacity-50 group ${paymentMethod === 'cod' ? 'bg-red-600 hover:bg-red-700' : 'bg-zinc-900 hover:bg-black'}`}
-            >
-              {isBusy ? 'Processing...' : (paymentMethod === 'cod' ? `Place Order • Rs ${totalPrice.toLocaleString('en-IN')}` : `Pay Rs ${totalPrice.toLocaleString('en-IN')}`)}
-              {!isBusy && paymentMethod !== 'cod' && <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">lock</span>}
-              {!isBusy && paymentMethod === 'cod' && <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">local_shipping</span>}
-            </button>
-            
-            {paymentMethod !== 'cod' && paymentMethod !== 'demo' && (
-              <div className="mt-5 p-4 bg-zinc-50/80 border border-zinc-200/60 rounded-2xl flex items-start gap-3">
-                <span className="material-symbols-outlined text-green-600 text-[22px]">verified_user</span>
-                <div>
-                  <p className="font-black text-zinc-800 text-xs">ToyBlix does not collect card numbers or CVV.</p>
-                  <p className="text-[10px] text-zinc-500 font-bold mt-1.5 leading-relaxed">
-                    When you click pay, a secure hosted checkout opens so payment details stay strictly inside the payment gateway.
-                  </p>
+                {isGiftWrapped && (
+                  <div className="flex justify-between text-sm font-bold text-zinc-600">
+                    <span>Gift Wrap</span>
+                    <span>+ Rs 50</span>
+                  </div>
+                )}
+                {codFee > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-zinc-600">
+                    <span>COD Handling Fee</span>
+                    <span>+ Rs 50</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold text-zinc-600">
+                  <span>Shipping {deliveryFee > 0 ? '(Under Rs 500)' : ''}</span>
+                  {deliveryFee === 0 ? (
+                    <span className="text-green-600">Free</span>
+                  ) : (
+                    <span>+ Rs {deliveryFee}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-end pt-4">
+                  <span className="text-lg font-bold text-zinc-800">Total Due</span>
+                  <div className="text-right">
+                    {appliedCoupon && <span className="text-sm text-zinc-400 line-through block">Rs {subtotalPrice.toLocaleString('en-IN')}</span>}
+                    <span className="text-3xl font-black text-primary-container">Rs {totalPrice.toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
               </div>
-            )}
+
+              <button
+                type="submit"
+                form="checkout-form"
+                disabled={isBusy}
+                className={`w-full py-4 mt-8 text-white font-black text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl disabled:opacity-50 group ${paymentMethod === 'cod' ? 'bg-red-600 hover:bg-red-700' : 'bg-zinc-900 hover:bg-black'}`}
+              >
+                {isBusy ? 'Processing...' : (paymentMethod === 'cod' ? `Place Order • Rs ${totalPrice.toLocaleString('en-IN')}` : `Pay Rs ${totalPrice.toLocaleString('en-IN')}`)}
+                {!isBusy && paymentMethod !== 'cod' && <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">lock</span>}
+                {!isBusy && paymentMethod === 'cod' && <span className="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">local_shipping</span>}
+              </button>
+
+              {paymentMethod !== 'cod' && paymentMethod !== 'demo' && (
+                <div className="mt-5 p-4 bg-zinc-50/80 border border-zinc-200/60 rounded-2xl flex items-start gap-3">
+                  <span className="material-symbols-outlined text-green-600 text-[22px]">verified_user</span>
+                  <div>
+                    <p className="font-black text-zinc-800 text-xs">ToyBlix does not collect card numbers or CVV.</p>
+                    <p className="text-[10px] text-zinc-500 font-bold mt-1.5 leading-relaxed">
+                      When you click pay, a secure hosted checkout opens so payment details stay strictly inside the payment gateway.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      {/* Points Reward Full-Screen Popup */}
-      {showPointsPopup && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2.5rem] p-8 md:p-12 text-center max-w-sm w-full shadow-2xl relative overflow-hidden transform scale-100 animate-in zoom-in-90 duration-500">
-            {/* Background elements */}
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-yellow-400/20 rounded-full blur-3xl animate-[pulse_2s_ease-in-out_infinite]"></div>
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-red-400/20 rounded-full blur-3xl animate-[pulse_2s_ease-in-out_infinite]" style={{ animationDelay: '1s' }}></div>
-            
-            <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-yellow-500/30 text-5xl animate-[bounce_1s_infinite]">
-              🏆
-            </div>
-            
-            <h2 className="text-3xl font-black text-slate-900 mb-2">Awesome!</h2>
-            <p className="text-slate-600 font-medium mb-8 text-[15px] leading-snug">
-              Your order is placed and you earned <span className="font-bold text-red-600">Loyalty Points</span>!
-            </p>
-            
-            <div className="w-full bg-slate-50 py-5 rounded-2xl border border-slate-100 mb-6">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Points Earned</p>
-              <p className="text-4xl font-black text-red-600">+10</p>
-            </div>
-            
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-medium">
-              <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-red-600 animate-spin"></span>
-              Redirecting to your orders...
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

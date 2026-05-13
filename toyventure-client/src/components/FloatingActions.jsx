@@ -5,7 +5,6 @@ const BOT_TYPING_DELAY = 500; // Faster response feel for AI
 
 const MENU_ITEMS = [
   { id: 'track',    label: 'Track My Order',  icon: 'local_shipping',  requiresAuth: true  },
-  { id: 'rewards',  label: 'Reward Points',   icon: 'toll',            requiresAuth: true  },
   { id: 'delivery', label: 'Delivery Info',   icon: 'info',            requiresAuth: false },
   { id: 'howto',    label: 'How To Order',    icon: 'help_outline',    requiresAuth: false },
   { id: 'payment',  label: 'Payment Info',    icon: 'payments',        requiresAuth: false },
@@ -163,22 +162,6 @@ const FloatingActions = () => {
       return;
     }
 
-    // 2. Frontend Logic: Rewards
-    if (item.id === 'rewards') {
-      setIsBotTyping(true);
-      setTimeout(() => {
-        setIsBotTyping(false);
-        const pts    = profile?.points ?? 0;
-        const needed = 50 - pts;
-        if (pts >= 50) {
-          addBotText(`⭐ You have ${pts} reward points!\n\nYou can redeem 50 points for a 10% discount on your next order at Checkout.\n\nKeep shopping to earn more! 🎉`);
-        } else {
-          addBotText(`⭐ You have ${pts} reward points.\n\nYou earn 10 points per successful purchase. You need ${needed} more points to unlock a 10% discount! 🛒`);
-        }
-        addBackMenu();
-      }, BOT_TYPING_DELAY);
-      return;
-    }
 
     // 3. Frontend Logic: Explicit Contact Us (Sends Email)
     if (item.id === 'contact') {

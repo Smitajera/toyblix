@@ -149,7 +149,7 @@ const markOrderPaid = async (order, paymentDetails) => {
 
 const createRazorpayOrder = async (req, res, next) => {
   try {
-    const { orderItems, shippingDetails, totalPrice, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount, usePoints, couponCode } = req.body;
+    const { orderItems, shippingDetails, totalPrice, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount, couponCode } = req.body;
     const idempotencyKey = req.get('Idempotency-Key') || req.body.idempotencyKey;
 
     validateOrderPayload({ orderItems, shippingDetails, totalPrice });
@@ -177,9 +177,6 @@ const createRazorpayOrder = async (req, res, next) => {
     const normalizedOrderItems = normalizeOrderItems(orderItems);
     await assertInventoryAvailable(normalizedOrderItems);
 
-    let pointsUsed = 0;
-    let pointsEarned = 10; // 10 points for prepaid order
-
     // Apply Tiered Prepaid Discount (10% for 500-2000, 15% for > 2000)
     let autoDiscount = 0;
     const basePrice = Number(totalPrice) + (Number(discountAmount) || 0); 
@@ -190,19 +187,7 @@ const createRazorpayOrder = async (req, res, next) => {
       autoDiscount = Math.round(basePrice * 0.15);
     }
 
-    const finalTotalPriceBeforePoints = Math.max(0, Number(totalPrice) - autoDiscount);
-
-    if (usePoints && !couponCode && Number(usePoints) > 0) {
-      const requestedPoints = Math.min(Number(usePoints), 50); // Max 50 points per order
-      if (req.user.points >= requestedPoints) {
-        req.user.points -= requestedPoints;
-        pointsUsed = requestedPoints;
-      } else {
-        return res.status(400).json({ message: 'Not enough points to redeem.' });
-      }
-    }
-
-    const finalOrderTotal = Number(finalTotalPriceBeforePoints - pointsUsed);
+    const finalOrderTotal = Math.max(0, Number(totalPrice) - autoDiscount);
 
     const razorpay = getRazorpayClient();
     const receipt = buildReceipt(req.user._id);
@@ -233,8 +218,6 @@ const createRazorpayOrder = async (req, res, next) => {
       giftWrapFee: Number(giftWrapFee) || 0,
       codFee: Number(codFee) || 0,
       discountAmount: (Number(discountAmount) || 0) + autoDiscount,
-      pointsUsed,
-      pointsEarned,
       razorpay: {
         orderId: razorpayOrder.id,
         receipt: razorpayOrder.receipt,
@@ -266,7 +249,7 @@ const createRazorpayOrder = async (req, res, next) => {
 
 const createDemoOrder = async (req, res, next) => {
   try {
-    const { orderItems, shippingDetails, totalPrice, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount, usePoints } = req.body;
+    const { orderItems, shippingDetails, totalPrice, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount } = req.body;
     const idempotencyKey = req.get('Idempotency-Key') || req.body.idempotencyKey;
 
     validateOrderPayload({ orderItems, shippingDetails, totalPrice });
@@ -292,20 +275,6 @@ const createDemoOrder = async (req, res, next) => {
        return res.status(400).json({ message: inventoryResult.reason });
     }
 
-    let pointsUsed = 0;
-    let pointsEarned = 10;
-
-    if (usePoints && !couponCode) {
-      if (req.user.points >= 50) {
-        req.user.points -= 50;
-        pointsUsed = 50;
-      } else {
-        return res.status(400).json({ message: 'Not enough points to redeem.' });
-      }
-    }
-
-    req.user.points += pointsEarned;
-    await req.user.save();
 
     const localOrder = await Order.create({
       user: req.user._id,
@@ -326,8 +295,6 @@ const createDemoOrder = async (req, res, next) => {
       giftWrapFee: Number(giftWrapFee) || 0,
       codFee: Number(codFee) || 0,
       discountAmount: Number(discountAmount) || 0,
-      pointsUsed,
-      pointsEarned,
     });
 
     // Increment coupon usage if a code was applied

@@ -15,7 +15,7 @@ const normalizeOrderItemImages = (orderItems) =>
 // @access  Private
     const createOrder = async (req, res) => {
     try {
-        const { orderItems, shippingDetails, totalPrice, paymentMethod, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount, usePoints } = req.body;
+        const { orderItems, shippingDetails, totalPrice, paymentMethod, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount } = req.body;
 
         // Ensure direct order creation is ONLY used for Cash On Delivery
         if (paymentMethod !== 'cod') {
@@ -28,22 +28,7 @@ const normalizeOrderItemImages = (orderItems) =>
             return res.status(400).json({ message: 'No order items provided' });
         }
 
-        let pointsUsed = 0;
-        let pointsEarned = 5; // 5 points for COD order
-
-        if (usePoints && !couponCode && Number(usePoints) > 0) {
-            const requestedPoints = Math.min(Number(usePoints), 50); // Max 50 points per order
-            if (req.user.points >= requestedPoints) {
-                req.user.points -= requestedPoints;
-                pointsUsed = requestedPoints;
-            } else {
-                return res.status(400).json({ message: 'Not enough points to redeem.' });
-            }
-        }
-
-        const finalOrderTotal = Number(totalPrice) - pointsUsed;
-
-        await req.user.save();
+        const finalOrderTotal = Number(totalPrice);
 
         const order = new Order({
             user: req.user._id,
@@ -59,10 +44,7 @@ const normalizeOrderItemImages = (orderItems) =>
             isGiftWrapped: Boolean(isGiftWrapped),
             deliveryFee: Number(deliveryFee) || 0,
             giftWrapFee: Number(giftWrapFee) || 0,
-            codFee: Number(codFee) || 0,
             discountAmount: Number(discountAmount) || 0,
-            pointsUsed,
-            pointsEarned,
             // FIX APPLIED HERE: Generate a unique idempotency key if one isn't provided
             idempotencyKey: req.body.idempotencyKey || `cod_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
         });
@@ -171,17 +153,6 @@ const updateOrderStatus = async (req, res) => {
                     order.isPaid = true;
                     order.paidAt = Date.now();
                     order.paymentStatus = 'paid';
-                }
-
-                // Grant loyalty points if they haven't been granted yet
-                if (order.pointsEarned > 0 && !order.pointsGranted) {
-                    const User = require('../models/User');
-                    const user = await User.findById(order.user._id);
-                    if (user) {
-                        user.points = (user.points || 0) + order.pointsEarned;
-                        await user.save();
-                        order.pointsGranted = true;
-                    }
                 }
             }
 
