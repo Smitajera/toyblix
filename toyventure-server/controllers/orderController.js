@@ -156,7 +156,7 @@ const updateOrderStatus = async (req, res) => {
                 }
             }
 
-            const updatedOrder = await order.save();
+            const updatedOrder = await order.save({ validateBeforeSave: false });
 
             // SEND DISPATCH EMAIL
             if (isFreshlyDispatched && order.user && order.user.email) {

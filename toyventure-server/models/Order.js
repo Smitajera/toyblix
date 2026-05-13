@@ -28,7 +28,7 @@ const orderSchema = new mongoose.Schema({
         street: { type: String, required: true },
         landmark: { type: String }, // Left optional 
         city: { type: String, required: true },
-        state: { type: String, required: true },
+        state: { type: String },
         pincode: { type: String, required: true },
     },
     totalPrice: {
