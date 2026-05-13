@@ -16,7 +16,6 @@ import {
   useUpdateUserRoleMutation,
   useRequestAdminPromotionMutation,
   useConfirmAdminPromotionMutation,
-  useUpdateItemReturnStatusMutation,
   useProcessRefundMutation,
 } from '../features/api/apiSlice';
 
@@ -29,7 +28,6 @@ import AdminPromos            from '../components/admin/AdminPromos';
 import AdminAbandonedCarts    from '../components/admin/AdminAbandonedCarts';
 import AdminCustomers         from '../components/admin/AdminCustomers';
 import AdminModeration        from '../components/admin/AdminModeration';
-import AdminReturns           from '../components/admin/AdminReturns';
 import AdminOrderDetailsModal from '../components/admin/AdminOrderDetailsModal';
 import ConfirmModal           from '../components/ConfirmModal';
 
@@ -42,7 +40,6 @@ const AdminDashboard = () => {
 
   // ── Mutations ──────────────────────────────────────────────────
   const [updateOrderStatus, { isLoading: isUpdating }]           = useUpdateOrderStatusMutation();
-  const [updateItemReturnStatus, { isLoading: isUpdatingReturn }] = useUpdateItemReturnStatusMutation();
   const [processRefund]                                           = useProcessRefundMutation();
   const [createCoupon]                                            = useCreateCouponMutation();
   const [deleteCoupon]                                            = useDeleteCouponMutation();
@@ -79,22 +76,12 @@ const AdminDashboard = () => {
     return [...acc, ...product.reviews.map(r => ({ ...r, productId: product._id, productTitle: product.title, productImage: product.img }))];
   }, []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
 
-  const allReturnRequests = orders?.flatMap(order =>
-    (order.orderItems || [])
-      .filter(item => item.returnStatus && item.returnStatus !== 'Not Requested')
-      .map(item => ({ ...item, order }))
-  ) || [];
-
-  const pendingReturnsCount = allReturnRequests.filter(
-    r => r.returnStatus === 'Return Requested' || r.returnStatus === 'Exchange Requested'
-  ).length;
 
   // Sidebar badges
   const badges = {
     customers: users?.length || 0,
     promos:    coupons?.length || 0,
     reviews:   allReviews.length,
-    returns:   pendingReturnsCount,
   };
 
   // ── Handlers ───────────────────────────────────────────────────
@@ -120,14 +107,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateReturnStatus = async (orderId, itemId, status) => {
-    try {
-      await updateItemReturnStatus({ id: orderId, itemId, status }).unwrap();
-      toast.success(`Request marked as ${status}`);
-    } catch (err) {
-      toast.error(err?.data?.message || 'Failed to update request');
-    }
-  };
 
   const handleRequestAdminOtp = async (e) => {
     e.preventDefault();
@@ -260,15 +239,6 @@ const AdminDashboard = () => {
                 setConfirmReviewDelete={setConfirmReviewDelete}
               />
             )}
-
-            {activeTab === 'returns' && (
-              <AdminReturns
-                allReturnRequests={allReturnRequests}
-                pendingReturnsCount={pendingReturnsCount}
-                updateItemReturnStatus={updateItemReturnStatus}
-                isUpdatingReturn={isUpdatingReturn}
-              />
-            )}
           </div>
         </div>
       </div>
@@ -278,8 +248,6 @@ const AdminDashboard = () => {
         order={selectedOrder}
         products={productsData?.products || []}
         onClose={() => setSelectedOrder(null)}
-        onUpdateReturnStatus={handleUpdateReturnStatus}
-        isUpdatingReturn={isUpdatingReturn}
       />
 
       <ConfirmModal

@@ -53,34 +53,8 @@ const Profile = () => {
     skip: !isAdmin
   });
 
-  const [requestItemReturn, { isLoading: isRequestingReturn }] = useRequestItemReturnMutation();
-  const [returnModal, setReturnModal] = useState({ isOpen: false, orderId: null, item: null, type: 'return', reason: '', returnImage: '' });
-  const [uploadingReturnImage, setUploadingReturnImage] = useState(false);
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-  const handleReturnImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append('images', file);
-    setUploadingReturnImage(true);
-    try {
-      const token = sessionStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/upload`, { 
-        method: 'POST', 
-        headers: token ? { authorization: `Bearer ${token}` } : {}, 
-        body: formData 
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json(); 
-      setReturnModal(prev => ({ ...prev, returnImage: data[0] }));
-    } catch (error) { 
-      toast.error('Image upload failed.'); 
-    } finally { 
-      setUploadingReturnImage(false); 
-      e.target.value = null;
-    }
-  };
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -113,15 +87,6 @@ const Profile = () => {
     }
   }, [profile]);
 
-  // Lock body scroll when return modal is open (prevents browser scroll-to-focus bug)
-  useEffect(() => {
-    if (returnModal.isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [returnModal.isOpen]);
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -347,7 +312,7 @@ const Profile = () => {
 
                                   {/* Return Status / Button */}
                                   <div className="sm:w-auto w-full flex flex-col items-end gap-1">
-                                      {item.returnStatus !== 'Not Requested' ? (
+                                      {item.returnStatus !== 'Not Requested' && (
                                         <div className="flex flex-col items-end gap-1">
                                           <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-full border flex items-center gap-1 w-max ${
                                             item.returnStatus === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
@@ -365,15 +330,7 @@ const Profile = () => {
                                             </p>
                                           )}
                                         </div>
-                                      ) : isEligibleForReturn ? (
-                                        <button 
-                                          onClick={() => setReturnModal({ isOpen: true, orderId: order._id, item, type: 'return', reason: '', returnImage: '' })}
-                                          className="text-[10px] bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white uppercase tracking-widest font-black px-4 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1 w-max"
-                                        >
-                                          <span className="material-symbols-outlined text-[14px]">assignment_return</span> 
-                                          Return / Exchange
-                                        </button>
-                                      ) : null}
+                                      )}
                                   </div>
                                 </div>
                               );
@@ -568,114 +525,7 @@ const Profile = () => {
           )}
         </div>
       </div>
-      {/* Return/Exchange Modal */}
-      {returnModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-center p-4 bg-black/40 backdrop-blur-md fade-in" style={{ alignItems: 'flex-start', paddingTop: '10vh' }}>
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[82vh]">
-            <div className="p-6 bg-red-50/50 border-b border-red-50 flex justify-between items-center">
-              <h3 className="text-xl font-black text-red-950 flex items-center gap-2">
-                <span className="material-symbols-outlined text-red-600">assignment_return</span>
-                Return or Exchange
-              </h3>
-              <button onClick={() => setReturnModal({ isOpen: false, orderId: null, item: null, type: 'return', reason: '' })} className="p-2 hover:bg-red-100 rounded-full transition-colors">
-                <span className="material-symbols-outlined text-red-950/40">close</span>
-              </button>
-            </div>
-            
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!returnModal.returnImage) {
-                toast.error("Please upload a photo of the product.");
-                return;
-              }
-              try {
-                await requestItemReturn({
-                  id: returnModal.orderId,
-                  itemId: returnModal.item._id,
-                  type: returnModal.type,
-                  reason: returnModal.reason,
-                  returnImage: returnModal.returnImage
-                }).unwrap();
-                toast.success(`${returnModal.type === 'exchange' ? 'Exchange' : 'Return'} requested successfully!`);
-                setReturnModal({ isOpen: false, orderId: null, item: null, type: 'return', reason: '', returnImage: '' });
-              } catch (err) {
-                toast.error(err?.data?.message || 'Failed to request return');
-              }
-            }} className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
-              
-              <div className="flex gap-4 items-center bg-red-50/30 p-3 rounded-2xl border border-red-50">
-                <div className="w-12 h-12 bg-white rounded-xl overflow-hidden shrink-0 border border-red-100">
-                  <img src={resolveImage(returnModal.item?.img || returnModal.item?.image)} alt={returnModal.item?.title} className="w-full h-full object-cover mix-blend-multiply" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-red-950 line-clamp-1">{returnModal.item?.title}</h4>
-                  {returnModal.item?.variant && <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">{returnModal.item.variant}</p>}
-                </div>
-              </div>
 
-              <div>
-                <label className="text-[10px] font-black text-red-950/50 uppercase tracking-widest block mb-2">Request Type</label>
-                <div className="flex gap-4">
-                  <label className={`flex-1 cursor-pointer p-4 rounded-2xl border-2 text-center transition-all ${returnModal.type === 'return' ? 'border-red-600 bg-red-50 text-red-700' : 'border-red-50 bg-white text-red-950/40 hover:border-red-200'}`}>
-                    <input type="radio" name="requestType" value="return" checked={returnModal.type === 'return'} onChange={() => setReturnModal(prev => ({...prev, type: 'return'}))} className="hidden" />
-                    <span className="material-symbols-outlined block text-2xl mb-1">currency_rupee</span>
-                    <span className="font-bold text-sm">Refund</span>
-                  </label>
-                  <label className={`flex-1 cursor-pointer p-4 rounded-2xl border-2 text-center transition-all ${returnModal.type === 'exchange' ? 'border-red-600 bg-red-50 text-red-700' : 'border-red-50 bg-white text-red-950/40 hover:border-red-200'}`}>
-                    <input type="radio" name="requestType" value="exchange" checked={returnModal.type === 'exchange'} onChange={() => setReturnModal(prev => ({...prev, type: 'exchange'}))} className="hidden" />
-                    <span className="material-symbols-outlined block text-2xl mb-1">sync</span>
-                    <span className="font-bold text-sm">Exchange</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-red-950/50 uppercase tracking-widest block mb-2">Product Photo *</label>
-                <div className="flex items-center gap-4">
-                  {returnModal.returnImage ? (
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-red-600 shadow-sm">
-                      <img src={returnModal.returnImage} alt="Defect" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setReturnModal(prev => ({ ...prev, returnImage: '' }))} className="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm hover:bg-red-600 transition-colors">
-                        <span className="material-symbols-outlined text-[12px]">close</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <label className={`flex-1 border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors ${uploadingReturnImage ? 'border-red-200 bg-red-50/50' : 'border-red-200 hover:border-red-400 bg-red-50/30'}`}>
-                      <input type="file" accept="image/*" onChange={handleReturnImageUpload} disabled={uploadingReturnImage} className="hidden" />
-                      <span className={`material-symbols-outlined text-2xl ${uploadingReturnImage ? 'text-red-300 animate-pulse' : 'text-red-400'}`}>
-                        {uploadingReturnImage ? 'cloud_upload' : 'add_a_photo'}
-                      </span>
-                      <span className="text-[10px] font-bold text-red-950/60 mt-1">
-                        {uploadingReturnImage ? 'Uploading...' : 'Upload Photo'}
-                      </span>
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-red-950/50 uppercase tracking-widest block mb-2">Reason for {returnModal.type}</label>
-                <textarea 
-                  required
-                  value={returnModal.reason}
-                  onChange={(e) => setReturnModal(prev => ({...prev, reason: e.target.value}))}
-                  placeholder={`Please describe why you want to ${returnModal.type} this item...`}
-                  className="w-full bg-red-50/50 p-4 rounded-2xl border border-red-50 focus:ring-2 focus:ring-red-600 outline-none resize-none font-medium text-sm text-red-950 h-24"
-                ></textarea>
-              </div>
-
-              <div className="pt-2 flex gap-3">
-                <button type="button" onClick={() => setReturnModal({ isOpen: false, orderId: null, item: null, type: 'return', reason: '' })} className="flex-1 py-3 bg-red-50 text-red-950/60 font-black rounded-xl hover:bg-red-100 transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={isRequestingReturn} className="flex-1 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-colors shadow-md disabled:opacity-50">
-                  {isRequestingReturn ? 'Submitting...' : 'Submit Request'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </main>
   );
 };

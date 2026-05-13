@@ -5,9 +5,7 @@ const {
     getMyOrders, 
     getOrders, 
     updateOrderStatus, 
-    downloadInvoice,
-    requestItemReturn,
-    updateItemReturnStatus
+    downloadInvoice
 } = require('../controllers/orderController');
 const { protect, admin } = require('../middleware/authMiddleware'); 
 
@@ -24,9 +22,5 @@ router.get('/:id/invoice', protect, downloadInvoice);
 
 // NEW: Route for admin to update order status dynamically
 router.route('/:id/status').put(protect, admin, updateOrderStatus);
-
-// NEW: Routes for 7-day Item-Level Returns/Exchanges
-router.put('/:id/item/:itemId/return', protect, requestItemReturn);
-router.put('/:id/item/:itemId/return-status', protect, admin, updateItemReturnStatus);
 
 module.exports = router;

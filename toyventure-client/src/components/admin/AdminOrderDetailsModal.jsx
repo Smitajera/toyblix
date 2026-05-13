@@ -186,40 +186,7 @@ const AdminOrderDetailsModal = ({ order, products = [], onClose, onUpdateReturnS
                         <div className="font-black text-red-950">₹{item.price * item.qty}</div>
                       </div>
 
-                      {item.returnStatus && item.returnStatus !== 'Not Requested' && (
-                        <div className="bg-red-50/50 p-3 rounded-xl border border-red-100 flex flex-col gap-2 mt-2">
-                          <div className="flex justify-between items-center">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${
-                              item.returnStatus === 'Approved' ? 'bg-green-100 text-green-700' :
-                              item.returnStatus === 'Rejected' ? 'bg-red-200 text-red-800' :
-                              'bg-orange-100 text-orange-700'}`}>
-                              {item.returnStatus}
-                            </span>
-                            {item.returnRequestedAt && (
-                              <span className="text-[10px] font-bold text-red-950/40">
-                                {new Date(item.returnRequestedAt).toLocaleDateString('en-IN')}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs font-medium text-red-950/70 bg-white p-2 rounded-lg border border-red-50 italic">
-                            "{item.returnReason}"
-                          </p>
-                          {(item.returnStatus === 'Return Requested' || item.returnStatus === 'Exchange Requested') && (
-                            <div className="flex gap-2 justify-end mt-1">
-                              <button
-                                disabled={isUpdatingReturn}
-                                onClick={() => onUpdateReturnStatus(order._id, item._id, 'Rejected')}
-                                className="text-[10px] font-black uppercase tracking-widest bg-red-100 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
-                              >Reject</button>
-                              <button
-                                disabled={isUpdatingReturn}
-                                onClick={() => onUpdateReturnStatus(order._id, item._id, 'Approved')}
-                                className="text-[10px] font-black uppercase tracking-widest bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                              >Approve</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+
                     </div>
                   ))}
                 </div>

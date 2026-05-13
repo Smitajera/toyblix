@@ -131,8 +131,6 @@ export const apiSlice = createApi({
     
     getAllOrders: builder.query({ query: () => '/orders', providesTags: ['Order'] }),
     updateOrderStatus: builder.mutation({ query: ({ id, status, courierName, trackingLink }) => ({ url: `/orders/${id}/status`, method: 'PUT', body: { status, courierName, trackingLink } }), invalidatesTags: ['Order'] }),
-    requestItemReturn: builder.mutation({ query: ({ id, itemId, type, reason, returnImage }) => ({ url: `/orders/${id}/item/${itemId}/return`, method: 'PUT', body: { type, reason, returnImage } }), invalidatesTags: ['Order'] }),
-    updateItemReturnStatus: builder.mutation({ query: ({ id, itemId, status, rejectionReason }) => ({ url: `/orders/${id}/item/${itemId}/return-status`, method: 'PUT', body: { status, rejectionReason } }), invalidatesTags: ['Order'] }),
     
     createRazorpayOrder: builder.mutation({ query: ({ idempotencyKey, ...data }) => ({ url: '/payments/razorpay/order', method: 'POST', body: data, headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined }) }),
     verifyRazorpayPayment: builder.mutation({ query: (data) => ({ url: '/payments/razorpay/verify', method: 'POST', body: data }), invalidatesTags: ['Order', 'User'] }),
@@ -158,7 +156,7 @@ export const {
   useLoginMutation, useRegisterMutation, useSendOtpMutation, useVerifyOtpMutation,
   useGetUserProfileQuery, useUpdateUserProfileMutation,
   useGetAllUsersQuery, useToggleUserBanStatusMutation, useUpdateUserRoleMutation, useRequestAdminPromotionMutation, useConfirmAdminPromotionMutation, 
-  useCreateOrderMutation, useCreateCodOrderMutation, useGetMyOrdersQuery, useGetAllOrdersQuery, useUpdateOrderStatusMutation, useRequestItemReturnMutation, useUpdateItemReturnStatusMutation,
+  useCreateOrderMutation, useCreateCodOrderMutation, useGetMyOrdersQuery, useGetAllOrdersQuery, useUpdateOrderStatusMutation,
   useCreateRazorpayOrderMutation, useVerifyRazorpayPaymentMutation, useCreateDemoOrderMutation, useProcessRefundMutation,
   useSubmitContactMessageMutation, useGetAllContactMessagesQuery, useSubscribeNewsletterMutation,
   useGetAllCouponsQuery, useCreateCouponMutation, useDeleteCouponMutation, useToggleCouponMutation, useValidateCouponMutation,

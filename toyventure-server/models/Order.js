@@ -14,15 +14,7 @@ const orderSchema = new mongoose.Schema({
             img: { type: String },
             price: { type: Number, required: true },
             variant: { type: String },
-            returnStatus: {
-                type: String,
-                enum: ['Not Requested', 'Return Requested', 'Exchange Requested', 'Approved', 'Rejected'],
-                default: 'Not Requested'
-            },
-            returnReason: { type: String },
-            returnImage: { type: String }, // Store the Cloudinary URL of the defect photo
-            returnRejectionReason: { type: String }, // Store the admin's rejection reason
-            returnRequestedAt: { type: Date },
+
             _id: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Product'

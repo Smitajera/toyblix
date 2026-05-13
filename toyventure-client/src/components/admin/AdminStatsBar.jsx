@@ -39,13 +39,8 @@ const AdminStatsBar = ({ totalRevenue, totalOrders, pendingOrders, orders = [], 
     acc + (o.paymentStatus === 'paid' || o.paymentMethod === 'cod' ? o.totalPrice : 0), 0);
   const dispatchedToday = todayOrders.filter(o => o.orderStatus === 'dispatched').length;
 
-  /* ── Pending returns ── */
-  const pendingReturns = orders.reduce((acc, o) => {
-    const pending = (o.orderItems || []).filter(item =>
-      item.returnStatus === 'Return Requested' || item.returnStatus === 'Exchange Requested'
-    ).length;
-    return acc + pending;
-  }, 0);
+  /* ── Total customers ── */
+  const totalCustomers = users?.length || 0;
 
   /* ── Cancellation rate ── */
   const cancelled = orders.filter(o => o.orderStatus === 'cancelled').length;
@@ -82,7 +77,7 @@ const AdminStatsBar = ({ totalRevenue, totalOrders, pendingOrders, orders = [], 
             { icon: 'receipt_long',      label: 'New Orders',       value: todayOrders.length },
             { icon: 'payments',          label: 'Today Revenue',    value: `₹${todayRevenue.toLocaleString('en-IN')}` },
             { icon: 'local_shipping',    label: 'Dispatched',       value: dispatchedToday },
-            { icon: 'assignment_return', label: 'Pending Returns',  value: pendingReturns, alert: pendingReturns > 0 },
+            { icon: 'group',            label: 'New Customers',    value: newCustomers },
           ].map(s => (
             <div key={s.label} className="flex items-center gap-2">
               <span className={`material-symbols-outlined text-[18px] ${s.alert ? 'text-orange-300' : 'text-red-300'}`}>{s.icon}</span>
@@ -98,9 +93,9 @@ const AdminStatsBar = ({ totalRevenue, totalOrders, pendingOrders, orders = [], 
       {/* Row 3: Operational stats */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon="assignment_return" label="Pending Returns" value={pendingReturns}
-          color="orange" sub={pendingReturns > 0 ? 'Needs attention!' : 'All clear ✓'}
-          onClick={() => setActiveTab?.('returns')} clickable={!!setActiveTab}
+          icon="group" label="Total Customers" value={totalCustomers}
+          color="orange" sub="Lifetime"
+          onClick={() => setActiveTab?.('customers')} clickable={!!setActiveTab}
         />
         <StatCard
           icon="cancel" label="Cancellation Rate" value={`${cancelRate}%`}
