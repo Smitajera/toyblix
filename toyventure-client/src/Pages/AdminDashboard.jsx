@@ -68,7 +68,10 @@ const AdminDashboard = () => {
   const [confirmUserRole,     setConfirmUserRole]     = useState({ isOpen: false, id: null, role: null });
 
   // ── Derived data ───────────────────────────────────────────────
-  const totalRevenue  = orders?.reduce((acc, o) => acc + (o.paymentStatus === 'paid' || o.paymentMethod === 'cod' ? o.totalPrice : 0), 0) || 0;
+  const totalRevenue  = orders?.reduce((acc, o) => {
+    if (o.orderStatus === 'cancelled' || o.orderStatus === 'refunded') return acc;
+    return acc + (o.paymentStatus === 'paid' || o.paymentMethod === 'cod' ? o.totalPrice : 0);
+  }, 0) || 0;
   const totalOrders   = orders?.length || 0;
   const pendingOrders = orders?.filter(o => !['delivered', 'fulfilled', 'cancelled'].includes(o.orderStatus)).length || 0;
 

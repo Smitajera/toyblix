@@ -50,7 +50,11 @@ const AdminOrderPanel = ({ orders, isUpdating, onViewDetails }) => {
     if (!orders) return [];
     const dateStart = getDateStart();
     return orders.filter(o => {
-      const matchTab    = activeTab === 'all' || o.orderStatus === activeTab;
+      const matchTab = activeTab === 'all' 
+        ? true 
+        : activeTab === 'pending' 
+          ? (o.orderStatus === 'pending' || o.orderStatus === 'pending_payment')
+          : o.orderStatus === activeTab;
       const matchSearch = o._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (o.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (o.shippingDetails?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -208,7 +212,7 @@ const AdminOrderPanel = ({ orders, isUpdating, onViewDetails }) => {
             <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
             {tab.label}
             <span className="ml-1 bg-red-50 px-2 py-0.5 rounded-full text-[10px]">
-              {orders?.filter(o => tab.id === 'all' || o.orderStatus === tab.id).length || 0}
+              {orders?.filter(o => tab.id === 'all' ? true : tab.id === 'pending' ? (o.orderStatus === 'pending' || o.orderStatus === 'pending_payment') : o.orderStatus === tab.id).length || 0}
             </span>
           </button>
         ))}
@@ -284,7 +288,8 @@ const AdminOrderPanel = ({ orders, isUpdating, onViewDetails }) => {
                         </button>
                       )}
                       {order.orderStatus === 'confirmed' && (
-                        <button onClick={() => handleUpdateStatus(order._id, 'dispatched')}
+                       
+                       <button onClick={() => handleUpdateStatus(order._id, 'dispatched')}
                           className="bg-orange-500 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-orange-600 transition-all shadow-md">
                           Dispatch
                         </button>

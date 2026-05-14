@@ -35,8 +35,10 @@ const AdminStatsBar = ({ totalRevenue, totalOrders, pendingOrders, orders = [], 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
   const todayOrders   = orders.filter(o => new Date(o.createdAt) >= todayStart);
-  const todayRevenue  = todayOrders.reduce((acc, o) =>
-    acc + (o.paymentStatus === 'paid' || o.paymentMethod === 'cod' ? o.totalPrice : 0), 0);
+  const todayRevenue  = todayOrders.reduce((acc, o) => {
+    if (o.orderStatus === 'cancelled' || o.orderStatus === 'refunded') return acc;
+    return acc + (o.paymentStatus === 'paid' || o.paymentMethod === 'cod' ? o.totalPrice : 0);
+  }, 0);
   const dispatchedToday = todayOrders.filter(o => o.orderStatus === 'dispatched').length;
 
   /* ── Total customers ── */

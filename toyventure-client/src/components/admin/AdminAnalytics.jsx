@@ -69,7 +69,12 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
     dateLabels.forEach(l => (revenueDataMap[l] = 0));
 
     orders.forEach(order => {
-      if (order.paymentStatus !== 'paid' && order.paymentMethod !== 'cod') return;
+      // ACTUAL REVENUE: Only count orders that are PAID and NOT cancelled/refunded
+      const isActualRevenue = order.paymentStatus === 'paid' && 
+                              order.orderStatus !== 'cancelled' && 
+                              order.orderStatus !== 'refunded';
+                              
+      if (!isActualRevenue) return;
       const orderDate = new Date(order.createdAt);
       if (orderDate >= startDate && orderDate <= endDate) {
         let label = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -86,17 +91,20 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
     INDIAN_STATES.forEach(s => (areaMap[s] = 0));
 
     orders.forEach(order => {
-      const uid = order.user
-        ? (typeof order.user === 'object' ? order.user._id : order.user)
-        : order.shippingDetails?.phone;
-      if (uid) userOrdersMap[uid] = (userOrdersMap[uid] || 0) + 1;
+      const isValid = order.orderStatus !== 'cancelled' && 
+                      order.orderStatus !== 'refunded';
 
-      const isPaid = order.paymentStatus === 'paid' || order.paymentMethod === 'cod';
-      if (order.shippingDetails?.city && isPaid) {
+      if (isValid) {
+        const uid = order.user
+          ? (typeof order.user === 'object' ? order.user._id : order.user)
+          : order.shippingDetails?.phone;
+        if (uid) userOrdersMap[uid] = (userOrdersMap[uid] || 0) + 1;
+      }
+      if (order.shippingDetails?.city && isValid) {
         const city = order.shippingDetails.city.trim().toUpperCase();
         cityMap[city] = (cityMap[city] || 0) + 1;
       }
-      if (order.shippingDetails?.state && isPaid) {
+      if (order.shippingDetails?.state && isValid) {
         let s = order.shippingDetails.state.trim();
         // Handle variations or normalization if needed, but dropdown in checkout should keep it clean
         // Just normalize casing to be safe
@@ -113,7 +121,7 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
           areaMap[s] = (areaMap[s] || 0) + 1;
         }
       }
-      if (isPaid) {
+      if (isValid) {
         order.orderItems?.forEach(item => {
           topToysMap[item.title] = (topToysMap[item.title] || 0) + item.qty;
           const product = productsData?.products?.find(
@@ -310,8 +318,21 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
                   return `${params.name}<br/>Orders: ${params.value || 0}`;
                 }
               },
-              visualMap: { min: 0, max: Math.max(...(analyticsData.areaData.length ? analyticsData.areaData.map(d => d.value) : [10])), left: 'left', top: 'bottom', text: ['High', 'Low'], calculable: true, inRange: { color: ['#eff6ff', '#3b82f6', '#1e3a8a'] } },
-              series: [{ name: 'Orders', type: 'map', map: 'India', roam: true, itemStyle: { areaColor: '#eff6ff', borderColor: '#93c5fd' }, emphasis: { itemStyle: { areaColor: '#60a5fa' }, label: { show: true, color: '#fff' } }, data: analyticsData.areaData }]
+              visualMap: { 
+                type: 'piecewise',
+                left: 'left', 
+                top: 'bottom', 
+                pieces: [
+                  { min: 50, label: '50+ Orders', color: '#1e3a8a' },
+                  { min: 20, max: 49, label: '20-49 Orders', color: '#1d4ed8' },
+                  { min: 5, max: 19, label: '5-19 Orders', color: '#3b82f6' },
+                  { min: 1, max: 4, label: '1-4 Orders', color: '#93c5fd' },
+                  { value: 0, label: '0 Orders', color: '#f8fafc' }
+                ],
+                textStyle: { color: '#64748b', fontWeight: 600, fontSize: 11 },
+                itemSymbol: 'roundRect'
+              },
+              series: [{ name: 'Orders', type: 'map', map: 'India', roam: true, itemStyle: { borderColor: '#cbd5e1', borderWidth: 0.5 }, emphasis: { itemStyle: { areaColor: '#fca5a5' }, label: { show: true, color: '#991b1b', fontWeight: 'bold' } }, data: analyticsData.areaData }]
             }}
             style={{ height: '100%', width: '100%' }}
           />
