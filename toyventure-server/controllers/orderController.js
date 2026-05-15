@@ -1,57 +1,86 @@
 const Order = require('../models/Order');
 const sendEmail = require('../utils/sendEmail');
 const generateInvoice = require('../utils/generateInvoice');
-const crypto = require('crypto'); // FIX: Added crypto for unique key generation
+const crypto = require('crypto');
+const { resolveCheckoutTotals } = require('../utils/checkoutPricing');
+const { assertInventoryAvailable, commitInventoryForOrder } = require('../utils/orderInventory');
+const { incrementCouponUsage } = require('./couponController');
 
-const normalizeOrderItemImages = (orderItems) =>
-    orderItems.map((item) => ({
-        ...item,
-        img: item.img || item.image || item.images?.[0],
-        variant: item.variant || '',
-    }));
+const isClientCheckoutError = (err) => {
+    const m = err?.message || '';
+    return (
+        m.includes('stock') ||
+        m.includes('quantity') ||
+        m.includes('Missing') ||
+        m.includes('mismatch') ||
+        m.includes('coupon') ||
+        m.includes('Order total') ||
+        m.includes('Unexpected discount') ||
+        m.includes('variant') ||
+        m.includes('Please select a variant') ||
+        m.includes('Minimum order') ||
+        m.includes('expired') ||
+        m.includes('usage limit') ||
+        m.includes('not found.')
+    );
+};
 
 // @desc    Create new order (specifically for COD)
 // @route   POST /api/orders
 // @access  Private
-    const createOrder = async (req, res) => {
+const createOrder = async (req, res) => {
     try {
-        const { orderItems, shippingDetails, totalPrice, paymentMethod, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount } = req.body;
+        const { shippingDetails, isGiftWrapped, paymentMethod } = req.body;
 
-        // Ensure direct order creation is ONLY used for Cash On Delivery
         if (paymentMethod !== 'cod') {
             return res.status(400).json({
                 message: 'Direct order creation is only for Cash on Delivery. Start checkout through Razorpay for online payments.',
             });
         }
 
-        if (!orderItems || orderItems.length === 0) {
-            return res.status(400).json({ message: 'No order items provided' });
+        let resolved;
+        try {
+            resolved = await resolveCheckoutTotals(req.body, 'cod');
+        } catch (e) {
+            if (isClientCheckoutError(e)) {
+                return res.status(400).json({ message: e.message });
+            }
+            throw e;
         }
 
-        const finalOrderTotal = Number(totalPrice);
+        await assertInventoryAvailable(resolved.enrichedItems);
+        const inventoryResult = await commitInventoryForOrder(resolved.enrichedItems);
+        if (!inventoryResult.committed) {
+            return res.status(400).json({ message: inventoryResult.reason });
+        }
 
         const order = new Order({
             user: req.user._id,
-            orderItems: normalizeOrderItemImages(orderItems),
+            orderItems: resolved.persistenceItems,
             shippingDetails,
-            totalPrice: finalOrderTotal,
+            totalPrice: resolved.finalTotal,
             paymentMethod: 'cod',
-            orderStatus: 'confirmed', // COD orders are confirmed right away
-            paymentStatus: 'pending', // Pending until delivery boy collects cash
+            orderStatus: 'confirmed',
+            paymentStatus: 'pending',
             isPaid: false,
-            couponCode: couponCode || null,
+            couponCode: resolved.couponCode,
             inventoryCommitted: true,
             isGiftWrapped: Boolean(isGiftWrapped),
-            deliveryFee: Number(deliveryFee) || 0,
-            giftWrapFee: Number(giftWrapFee) || 0,
-            discountAmount: Number(discountAmount) || 0,
-            // FIX APPLIED HERE: Generate a unique idempotency key if one isn't provided
-            idempotencyKey: req.body.idempotencyKey || `cod_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
+            deliveryFee: resolved.deliveryFee,
+            giftWrapFee: resolved.giftWrapFee,
+            codFee: resolved.codFee,
+            discountAmount: resolved.discountAmountStored,
+            idempotencyKey: req.body.idempotencyKey || `cod_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
         });
 
         const createdOrder = await order.save();
 
-        // SEND COD CONFIRMATION EMAIL
+        if (resolved.couponCode) {
+            incrementCouponUsage(resolved.couponCode, resolved.couponDiscount, resolved.finalTotal).catch((err) =>
+                console.error('COD coupon usage increment failed:', err)
+            );
+        }
+
         if (req.user && req.user.email) {
             sendEmail({
                 email: req.user.email,
@@ -62,16 +91,19 @@ const normalizeOrderItemImages = (orderItems) =>
                         <p style="color: #52525b; font-size: 16px; line-height: 1.5;">
                             Thank you for choosing ToyBlix! Your Cash on Delivery order <strong>#${String(createdOrder._id).slice(-8).toUpperCase()}</strong> has been successfully placed.
                         </p>
-                        <p style="color: #52525b; font-size: 16px;">Amount to pay on delivery: <strong style="color:#f97316;">₹${totalPrice}</strong></p>
+                        <p style="color: #52525b; font-size: 16px;">Amount to pay on delivery: <strong style="color:#f97316;">₹${resolved.finalTotal}</strong></p>
                         <p style="color: #52525b; font-size: 16px;">We will notify you once your package is dispatched.</p>
                     </div>
-                `
-            }).catch(err => console.error("Failed to send COD email:", err));
+                `,
+            }).catch((err) => console.error('Failed to send COD email:', err));
         }
 
         res.status(201).json(createdOrder);
     } catch (error) {
-        console.error("COD Create Order Error:", error);
+        if (isClientCheckoutError(error)) {
+            return res.status(400).json({ message: error.message });
+        }
+        console.error('COD Create Order Error:', error);
         res.status(500).json({ message: 'Server error: Failed to create COD order' });
     }
 };

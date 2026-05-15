@@ -2,17 +2,36 @@ const crypto = require('crypto');
 const Order = require('../models/Order');
 const PaymentEvent = require('../models/PaymentEvent');
 const {
-  normalizeOrderItems,
   validateOrderPayload,
   assertInventoryAvailable,
   commitInventoryForOrder,
 } = require('../utils/orderInventory');
+const { resolveCheckoutTotals } = require('../utils/checkoutPricing');
 const { getRazorpayClient } = require('../utils/razorpay');
 const { incrementCouponUsage } = require('../controllers/couponController');
 const sendEmail = require('../utils/sendEmail');
 const generateInvoice = require('../utils/generateInvoice');
 
 const formatBadRequest = (message, res) => res.status(400).json({ message });
+
+const isClientCheckoutError = (err) => {
+  const m = err?.message || '';
+  return (
+    m.includes('stock') ||
+    m.includes('quantity') ||
+    m.includes('Missing') ||
+    m.includes('mismatch') ||
+    m.includes('coupon') ||
+    m.includes('Order total') ||
+    m.includes('Unexpected discount') ||
+    m.includes('variant') ||
+    m.includes('Please select a variant') ||
+    m.includes('Minimum order') ||
+    m.includes('expired') ||
+    m.includes('usage limit') ||
+    m.includes('not found.')
+  );
+};
 
 const sendOrderConfirmationAndInvoice = async (orderId) => {
   try {
@@ -149,10 +168,8 @@ const markOrderPaid = async (order, paymentDetails) => {
 
 const createRazorpayOrder = async (req, res, next) => {
   try {
-    const { orderItems, shippingDetails, totalPrice, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount, couponCode } = req.body;
+    const { shippingDetails, isGiftWrapped } = req.body;
     const idempotencyKey = req.get('Idempotency-Key') || req.body.idempotencyKey;
-
-    validateOrderPayload({ orderItems, shippingDetails, totalPrice });
 
     if (!idempotencyKey) {
       return formatBadRequest('Missing Idempotency-Key for Razorpay checkout.', res);
@@ -174,20 +191,17 @@ const createRazorpayOrder = async (req, res, next) => {
       });
     }
 
-    const normalizedOrderItems = normalizeOrderItems(orderItems);
-    await assertInventoryAvailable(normalizedOrderItems);
-
-    // Apply Tiered Prepaid Discount (10% for 500-2000, 15% for > 2000)
-    let autoDiscount = 0;
-    const basePrice = Number(totalPrice) + (Number(discountAmount) || 0); 
-    
-    if (basePrice >= 500 && basePrice <= 2000) {
-      autoDiscount = Math.round(basePrice * 0.10);
-    } else if (basePrice > 2000) {
-      autoDiscount = Math.round(basePrice * 0.15);
+    let resolved;
+    try {
+      resolved = await resolveCheckoutTotals(req.body, 'razorpay');
+    } catch (e) {
+      if (isClientCheckoutError(e)) return formatBadRequest(e.message, res);
+      throw e;
     }
 
-    const finalOrderTotal = Math.max(0, Number(totalPrice) - autoDiscount);
+    await assertInventoryAvailable(resolved.enrichedItems);
+
+    const finalOrderTotal = resolved.finalTotal;
 
     const razorpay = getRazorpayClient();
     const receipt = buildReceipt(req.user._id);
@@ -205,7 +219,7 @@ const createRazorpayOrder = async (req, res, next) => {
 
     const localOrder = await Order.create({
       user: req.user._id,
-      orderItems: normalizedOrderItems,
+      orderItems: resolved.persistenceItems,
       shippingDetails,
       totalPrice: finalOrderTotal,
       currency: 'INR',
@@ -214,10 +228,11 @@ const createRazorpayOrder = async (req, res, next) => {
       paymentStatus: 'pending',
       idempotencyKey,
       isGiftWrapped: Boolean(isGiftWrapped),
-      deliveryFee: Number(deliveryFee) || 0,
-      giftWrapFee: Number(giftWrapFee) || 0,
-      codFee: Number(codFee) || 0,
-      discountAmount: (Number(discountAmount) || 0) + autoDiscount,
+      deliveryFee: resolved.deliveryFee,
+      giftWrapFee: resolved.giftWrapFee,
+      codFee: resolved.codFee,
+      couponCode: resolved.couponCode,
+      discountAmount: resolved.discountAmountStored,
       razorpay: {
         orderId: razorpayOrder.id,
         receipt: razorpayOrder.receipt,
@@ -239,7 +254,7 @@ const createRazorpayOrder = async (req, res, next) => {
       razorpayKeyId: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    if (error.message.includes('stock') || error.message.includes('quantity') || error.message.includes('Missing')) {
+    if (isClientCheckoutError(error)) {
       return formatBadRequest(error.message, res);
     }
 
@@ -249,10 +264,8 @@ const createRazorpayOrder = async (req, res, next) => {
 
 const createDemoOrder = async (req, res, next) => {
   try {
-    const { orderItems, shippingDetails, totalPrice, couponCode, isGiftWrapped, deliveryFee, giftWrapFee, codFee, discountAmount } = req.body;
+    const { shippingDetails, isGiftWrapped } = req.body;
     const idempotencyKey = req.get('Idempotency-Key') || req.body.idempotencyKey;
-
-    validateOrderPayload({ orderItems, shippingDetails, totalPrice });
 
     if (!idempotencyKey) {
       return formatBadRequest('Missing Idempotency-Key for checkout.', res);
@@ -266,40 +279,44 @@ const createDemoOrder = async (req, res, next) => {
       });
     }
 
-    const normalizedOrderItems = normalizeOrderItems(orderItems);
-    await assertInventoryAvailable(normalizedOrderItems);
-    
-    // Deduct inventory formally
-    const inventoryResult = await commitInventoryForOrder(normalizedOrderItems);
-    if (!inventoryResult.committed) {
-       return res.status(400).json({ message: inventoryResult.reason });
+    let resolved;
+    try {
+      resolved = await resolveCheckoutTotals(req.body, 'demo');
+    } catch (e) {
+      if (isClientCheckoutError(e)) return formatBadRequest(e.message, res);
+      throw e;
     }
 
+    await assertInventoryAvailable(resolved.enrichedItems);
+
+    const inventoryResult = await commitInventoryForOrder(resolved.enrichedItems);
+    if (!inventoryResult.committed) {
+      return res.status(400).json({ message: inventoryResult.reason });
+    }
 
     const localOrder = await Order.create({
       user: req.user._id,
-      orderItems: normalizedOrderItems,
+      orderItems: resolved.persistenceItems,
       shippingDetails,
-      totalPrice: Number(totalPrice),
+      totalPrice: resolved.finalTotal,
       currency: 'INR',
       paymentMethod: 'demo',
-      orderStatus: 'paid', // Immediately set to paid
-      paymentStatus: 'paid', // Immediately set to paid
+      orderStatus: 'paid',
+      paymentStatus: 'paid',
       isPaid: true,
       paidAt: new Date(),
       inventoryCommitted: true,
       idempotencyKey,
-      couponCode: couponCode || null,
+      couponCode: resolved.couponCode,
       isGiftWrapped: Boolean(isGiftWrapped),
-      deliveryFee: Number(deliveryFee) || 0,
-      giftWrapFee: Number(giftWrapFee) || 0,
-      codFee: Number(codFee) || 0,
-      discountAmount: Number(discountAmount) || 0,
+      deliveryFee: resolved.deliveryFee,
+      giftWrapFee: resolved.giftWrapFee,
+      codFee: resolved.codFee,
+      discountAmount: resolved.discountAmountStored,
     });
 
-    // Increment coupon usage if a code was applied
-    if (couponCode) {
-      await incrementCouponUsage(couponCode, discountAmount, totalPrice);
+    if (resolved.couponCode) {
+      await incrementCouponUsage(resolved.couponCode, resolved.couponDiscount, resolved.finalTotal);
     }
 
     logPaymentEvent({
@@ -316,7 +333,7 @@ const createDemoOrder = async (req, res, next) => {
       order: localOrder,
     });
   } catch (error) {
-    if (error.message.includes('stock') || error.message.includes('quantity') || error.message.includes('Missing')) {
+    if (isClientCheckoutError(error)) {
       return formatBadRequest(error.message, res);
     }
     next(error);

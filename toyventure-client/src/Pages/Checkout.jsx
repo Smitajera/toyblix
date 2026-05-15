@@ -152,8 +152,20 @@ const Checkout = () => {
 
   const deliveryFee = baseTotal < 500 ? 50 : 0;
   const giftWrapFee = isGiftWrapped ? 50 : 0;
-  const codFee = paymentMethod === 'cod' ? 50 : 0;
-  const totalPrice = baseTotal + deliveryFee + giftWrapFee + codFee;
+  const codFee = paymentMethod === 'cod' ? 29 : 0;
+
+  const prepaidTierDiscount = (baseForTier) => {
+    const b = Math.round(Number(baseForTier));
+    if (b >= 1899 && b <= 2499) return 120;
+    if (b >= 2500) return 240;
+    return 0;
+  };
+
+  const baseForPrepaidTier = subtotalPrice + deliveryFee + giftWrapFee + codFee;
+  const prepaidDiscount =
+    paymentMethod === 'razorpay' ? prepaidTierDiscount(baseForPrepaidTier) : 0;
+
+  const totalPrice = baseTotal + deliveryFee + giftWrapFee + codFee - prepaidDiscount;
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) { toast.error('Please enter a promo code.'); return; }
@@ -667,10 +679,16 @@ const Checkout = () => {
                     <span>+ Rs 50</span>
                   </div>
                 )}
+                {prepaidDiscount > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-green-600">
+                    <span>Online payment savings</span>
+                    <span>- Rs {prepaidDiscount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 {codFee > 0 && (
                   <div className="flex justify-between text-sm font-bold text-zinc-600">
                     <span>COD Handling Fee</span>
-                    <span>+ Rs 50</span>
+                    <span>+ Rs {codFee.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-bold text-zinc-600">
