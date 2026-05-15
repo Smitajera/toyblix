@@ -53,6 +53,7 @@ const ProductDetail = () => {
   const [mainImage, setMainImage] = useState('');
   
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [reviewImages, setReviewImages] = useState([]);
   const [isUploadingReviewImage, setIsUploadingReviewImage] = useState(false);
@@ -249,12 +250,39 @@ const ProductDetail = () => {
     }
   };
 
-  const renderStars = (starCount) => {
-    return [...Array(5)].map((_, index) => (
-      <span key={index} className={`material-symbols-outlined text-[18px] ${index < starCount ? 'text-yellow-400 filled' : 'text-zinc-300'}`}>
+  const renderStars = (starCount, sizeClass = 'text-[18px]') =>
+    [...Array(5)].map((_, index) => (
+      <span
+        key={index}
+        className={`material-symbols-outlined ${sizeClass} ${index < starCount ? 'text-red-600 filled' : 'text-zinc-300'}`}
+      >
         star
       </span>
     ));
+
+  const renderInteractiveRatingStars = () => {
+    const activeRating = hoverRating || rating;
+    return [...Array(5)].map((_, index) => {
+      const filled = index < activeRating;
+      return (
+        <button
+          key={index}
+          type="button"
+          onClick={() => setRating(index + 1)}
+          onMouseEnter={() => setHoverRating(index + 1)}
+          className="p-0.5 rounded-lg transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600/40"
+          aria-label={`Rate ${index + 1} out of 5`}
+        >
+          <span
+            className={`material-symbols-outlined text-[32px] transition-colors ${
+              filled ? 'text-red-600 filled' : 'text-zinc-300'
+            }`}
+          >
+            star
+          </span>
+        </button>
+      );
+    });
   };
 
   const openModal = (imgUrl) => {
@@ -689,14 +717,18 @@ const ProductDetail = () => {
                 <h3 className="text-xl font-black text-zinc-800 mb-6">Write a Review</h3>
                 <form onSubmit={submitReviewHandler} className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-zinc-600 ml-1">Rating</label>
-                    <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-full bg-white/60 p-4 border border-white rounded-2xl focus:ring-4 focus:ring-primary-container/20 outline-none transition-all shadow-inner font-bold text-zinc-800 cursor-pointer">
-                      <option value="5">5 - Excellent (⭐⭐⭐⭐⭐)</option>
-                      <option value="4">4 - Very Good (⭐⭐⭐⭐)</option>
-                      <option value="3">3 - Good (⭐⭐⭐)</option>
-                      <option value="2">2 - Fair (⭐⭐)</option>
-                      <option value="1">1 - Poor (⭐)</option>
-                    </select>
+                    <label className="text-xs font-black text-zinc-600 ml-1 uppercase tracking-widest">
+                      Overall Rating <span className="text-red-600">*</span>
+                    </label>
+                    <div
+                      className="flex items-center gap-4 bg-white/60 p-4 border border-white rounded-2xl shadow-inner"
+                      onMouseLeave={() => setHoverRating(0)}
+                    >
+                      <div className="flex items-center gap-0.5">{renderInteractiveRatingStars()}</div>
+                      <span className="text-xl font-black text-zinc-800 tabular-nums">
+                        {(hoverRating || rating).toFixed(1)}
+                      </span>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-zinc-600 ml-1">Your Experience (Optional)</label>
