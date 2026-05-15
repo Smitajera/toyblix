@@ -5,6 +5,7 @@ import {
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
   useGetAllContactMessagesQuery,
+  useRequestItemReturnMutation,
 } from '../features/api/apiSlice';
 import toast from 'react-hot-toast';
 
@@ -43,10 +44,16 @@ const Profile = () => {
   const [addresses, setAddresses] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [downloadingOrderIds, setDownloadingOrderIds] = useState({});
+  const [returnModal, setReturnModal] = useState({ isOpen: false, orderId: null, item: null });
+  const [returnReason, setReturnReason] = useState('');
+  const [returnType, setReturnType] = useState('return');
+  const [returnProofMedia, setReturnProofMedia] = useState([]);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
 
   const { data: orders, isLoading: loadingOrders } = useGetMyOrdersQuery(undefined, { pollingInterval: 5000 });
   const { data: profile, isLoading: loadingProfile } = useGetUserProfileQuery();
   const [updateProfile, { isLoading: isUpdating }] = useUpdateUserProfileMutation();
+  const [requestItemReturn, { isLoading: isSubmittingReturn }] = useRequestItemReturnMutation();
 
   const { data: messages, isLoading: loadingMessages } = useGetAllContactMessagesQuery(undefined, {
     skip: !isAdmin
@@ -159,6 +166,79 @@ const Profile = () => {
     }
   };
 
+  const openReturnModal = (orderId, item) => {
+    setReturnModal({ isOpen: true, orderId, item });
+    setReturnReason('');
+    setReturnType('return');
+    setReturnProofMedia([]);
+  };
+
+  const closeReturnModal = () => {
+    setReturnModal({ isOpen: false, orderId: null, item: null });
+    setReturnReason('');
+    setReturnType('return');
+    setReturnProofMedia([]);
+  };
+
+  const isVideoUrl = (url) => /\.(mp4|webm|mkv|mov|avi)(\?|$)/i.test(url) || url.includes('/video/');
+
+  const handleReturnProofUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (returnProofMedia.length + files.length > 5) {
+      return toast.error('You can upload up to 5 photos or videos as proof.');
+    }
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('images', files[i]);
+    }
+
+    setIsUploadingProof(true);
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: token ? { authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setReturnProofMedia((prev) => [...prev, ...data]);
+    } catch {
+      toast.error('Failed to upload proof. Please try again.');
+    } finally {
+      setIsUploadingProof(false);
+      e.target.value = null;
+    }
+  };
+
+  const handleSubmitReturn = async () => {
+    if (!returnReason.trim()) {
+      return toast.error('Please describe the damage or issue.');
+    }
+    if (returnProofMedia.length === 0) {
+      return toast.error('Please upload at least one photo or video as proof.');
+    }
+
+    const itemId = returnModal.item?._id?._id || returnModal.item?._id;
+    if (!returnModal.orderId || !itemId) return;
+
+    try {
+      await requestItemReturn({
+        id: returnModal.orderId,
+        itemId,
+        reason: returnReason.trim(),
+        requestType: returnType,
+        media: returnProofMedia,
+      }).unwrap();
+      toast.success('Return request submitted! Our team will review it shortly.');
+      closeReturnModal();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to submit return request.');
+    }
+  };
+
   if (loadingProfile) {
     return <div className="pt-40 min-h-screen bg-surface text-center font-bold text-red-950/50">Loading profile...</div>;
   }
@@ -262,7 +342,8 @@ const Profile = () => {
                               const isDelivered = order.orderStatus === 'delivered' || order.orderStatus === 'fulfilled';
                               const deliveryDate = order.statusTimestamps?.deliveredAt || order.createdAt;
                               const daysSinceDelivery = (Date.now() - new Date(deliveryDate).getTime()) / (1000 * 3600 * 24);
-                              const isEligibleForReturn = isDelivered && daysSinceDelivery <= 7 && item.returnStatus === 'Not Requested';
+                              const returnStatus = item.returnStatus || 'Not Requested';
+                              const isEligibleForReturn = isDelivered && daysSinceDelivery <= 7 && returnStatus === 'Not Requested';
 
                               return (
                                 <div key={idx} className="flex flex-col sm:flex-row gap-4 sm:items-center bg-white p-3 rounded-2xl border border-red-50 shadow-sm relative">
@@ -280,25 +361,36 @@ const Profile = () => {
 
                                   {/* Return Status / Button */}
                                   <div className="sm:w-auto w-full flex flex-col items-end gap-1">
-                                      {item.returnStatus !== 'Not Requested' && (
+                                      {returnStatus !== 'Not Requested' ? (
                                         <div className="flex flex-col items-end gap-1">
                                           <span className={`text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-full border flex items-center gap-1 w-max ${
-                                            item.returnStatus === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
-                                            item.returnStatus === 'Rejected' ? 'bg-red-950 text-white border-red-950' :
+                                            returnStatus === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                                            returnStatus === 'Rejected' ? 'bg-red-950 text-white border-red-950' :
                                             'bg-orange-50 text-orange-600 border-orange-200'
                                           }`}>
                                               <span className="material-symbols-outlined text-[14px]">
-                                                {item.returnStatus === 'Approved' ? 'check_circle' : item.returnStatus === 'Rejected' ? 'cancel' : 'pending_actions'}
+                                                {returnStatus === 'Approved' ? 'check_circle' : returnStatus === 'Rejected' ? 'cancel' : 'pending_actions'}
                                               </span>
-                                              {item.returnStatus}
+                                              {returnStatus}
                                           </span>
-                                          {item.returnStatus === 'Rejected' && item.returnRejectionReason && (
+                                          {returnStatus === 'Rejected' && item.returnRejectionReason && (
                                             <p className="text-[10px] text-red-600 font-bold max-w-[160px] text-right leading-relaxed">
                                               "{item.returnRejectionReason}"
                                             </p>
                                           )}
                                         </div>
-                                      )}
+                                      ) : isEligibleForReturn ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => openReturnModal(order._id, item)}
+                                          className="flex items-center gap-1.5 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-[10px] font-black uppercase tracking-widest rounded-xl border border-orange-200 transition-colors"
+                                        >
+                                          <span className="material-symbols-outlined text-[14px]">assignment_return</span>
+                                          Report Damage
+                                        </button>
+                                      ) : isDelivered && daysSinceDelivery > 7 ? (
+                                        <span className="text-[10px] text-red-950/30 font-bold">Return window closed</span>
+                                      ) : null}
                                   </div>
                                 </div>
                               );
@@ -493,6 +585,99 @@ const Profile = () => {
           )}
         </div>
       </div>
+
+      {/* Return request modal */}
+      {returnModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-black text-red-950 mb-1 flex items-center gap-2">
+              <span className="material-symbols-outlined text-red-600">assignment_return</span>
+              Report Product Damage
+            </h3>
+            <p className="text-sm text-red-950/50 font-medium mb-6">
+              {returnModal.item?.title} — upload photos and/or a video showing the damage.
+            </p>
+
+            <div className="flex gap-2 mb-4">
+              {['return', 'exchange'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setReturnType(type)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border transition-colors ${
+                    returnType === type
+                      ? 'bg-red-950 text-white border-red-950'
+                      : 'bg-red-50 text-red-950/60 border-red-100 hover:border-red-200'
+                  }`}
+                >
+                  {type === 'return' ? 'Return' : 'Exchange'}
+                </button>
+              ))}
+            </div>
+
+            <label className="text-sm font-bold text-red-950/70 ml-1 block mb-2">Describe the damage</label>
+            <textarea
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+              placeholder="e.g. Box was crushed, product arrived broken..."
+              className="w-full bg-red-50/50 p-4 rounded-2xl border border-red-100 focus:ring-2 focus:ring-red-600 outline-none resize-none font-medium text-sm text-red-950 h-24 mb-4"
+            />
+
+            <label className="text-sm font-bold text-red-950/70 ml-1 flex justify-between items-center mb-2">
+              <span>Upload proof (photos &amp; video)</span>
+              <span className="text-xs font-medium text-red-950/40">Max 5 files</span>
+            </label>
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              onChange={handleReturnProofUpload}
+              disabled={isUploadingProof || returnProofMedia.length >= 5}
+              className="w-full bg-red-50/50 p-3 border border-red-100 rounded-2xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-red-600 file:text-white cursor-pointer disabled:opacity-50 mb-2"
+            />
+            {isUploadingProof && <p className="text-xs text-red-600 font-bold mb-2">Uploading...</p>}
+
+            {returnProofMedia.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {returnProofMedia.map((url, idx) => (
+                  <div key={idx} className="relative shrink-0">
+                    {isVideoUrl(url) ? (
+                      <video src={url} className="w-20 h-20 object-cover rounded-xl border border-red-100" muted />
+                    ) : (
+                      <img src={url} alt={`Proof ${idx + 1}`} className="w-20 h-20 object-cover rounded-xl border border-red-100" />
+                    )}
+                    <button
+                      type="button"
+                      className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-800"
+                      onClick={() => setReturnProofMedia((prev) => prev.filter((_, i) => i !== idx))}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeReturnModal}
+                className="flex-1 py-3 bg-red-50 text-red-950/60 font-black rounded-xl hover:bg-red-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingReturn || isUploadingProof || !returnReason.trim() || returnProofMedia.length === 0}
+                onClick={handleSubmitReturn}
+                className="flex-1 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-colors shadow-md disabled:opacity-50"
+              >
+                {isSubmittingReturn ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );

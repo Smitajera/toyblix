@@ -18,7 +18,17 @@ const orderSchema = new mongoose.Schema({
             _id: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Product'
-            }
+            },
+            returnStatus: {
+                type: String,
+                enum: ['Not Requested', 'Return Requested', 'Exchange Requested', 'Approved', 'Rejected'],
+                default: 'Not Requested',
+            },
+            returnReason: { type: String, default: null },
+            returnImage: { type: String, default: null },
+            returnMedia: [{ type: String }],
+            returnRejectionReason: { type: String, default: null },
+            returnRequestedAt: { type: Date, default: null },
         }
     ],
     shippingDetails: {

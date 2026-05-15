@@ -17,6 +17,7 @@ import {
   useRequestAdminPromotionMutation,
   useConfirmAdminPromotionMutation,
   useProcessRefundMutation,
+  useUpdateItemReturnStatusMutation,
 } from '../features/api/apiSlice';
 
 // Sub-components
@@ -28,6 +29,7 @@ import AdminPromos            from '../components/admin/AdminPromos';
 import AdminAbandonedCarts    from '../components/admin/AdminAbandonedCarts';
 import AdminCustomers         from '../components/admin/AdminCustomers';
 import AdminModeration        from '../components/admin/AdminModeration';
+import AdminReturns           from '../components/admin/AdminReturns';
 import AdminOrderDetailsModal from '../components/admin/AdminOrderDetailsModal';
 import ConfirmModal           from '../components/ConfirmModal';
 
@@ -41,6 +43,7 @@ const AdminDashboard = () => {
   // ── Mutations ──────────────────────────────────────────────────
   const [updateOrderStatus, { isLoading: isUpdating }]           = useUpdateOrderStatusMutation();
   const [processRefund]                                           = useProcessRefundMutation();
+  const [updateItemReturnStatus, { isLoading: isUpdatingReturn }] = useUpdateItemReturnStatusMutation();
   const [createCoupon]                                            = useCreateCouponMutation();
   const [deleteCoupon]                                            = useDeleteCouponMutation();
   const [toggleCoupon]                                            = useToggleCouponMutation();
@@ -79,12 +82,22 @@ const AdminDashboard = () => {
     return [...acc, ...product.reviews.map(r => ({ ...r, productId: product._id, productTitle: product.title, productImage: product.img }))];
   }, []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
 
+  const allReturnRequests = (orders || []).flatMap((order) =>
+    (order.orderItems || [])
+      .filter((item) => item.returnStatus && item.returnStatus !== 'Not Requested')
+      .map((item) => ({ ...item, order }))
+  ).sort((a, b) => new Date(b.returnRequestedAt || 0) - new Date(a.returnRequestedAt || 0));
+
+  const pendingReturnsCount = allReturnRequests.filter(
+    (item) => item.returnStatus === 'Return Requested' || item.returnStatus === 'Exchange Requested'
+  ).length;
 
   // Sidebar badges
   const badges = {
     customers: users?.length || 0,
     promos:    coupons?.length || 0,
     reviews:   allReviews.length,
+    returns:   pendingReturnsCount,
   };
 
   // ── Handlers ───────────────────────────────────────────────────
@@ -200,6 +213,15 @@ const AdminDashboard = () => {
 
             {activeTab === 'orders' && (
               <AdminOrderPanel orders={orders} isUpdating={isUpdating} onViewDetails={setSelectedOrder} />
+            )}
+
+            {activeTab === 'returns' && (
+              <AdminReturns
+                allReturnRequests={allReturnRequests}
+                pendingReturnsCount={pendingReturnsCount}
+                updateItemReturnStatus={updateItemReturnStatus}
+                isUpdatingReturn={isUpdatingReturn}
+              />
             )}
 
             {activeTab === 'promos' && (

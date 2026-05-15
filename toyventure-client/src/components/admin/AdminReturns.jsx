@@ -68,15 +68,43 @@ const AdminReturns = ({ allReturnRequests, pendingReturnsCount, updateItemReturn
                     )}
                   </div>
 
-                  {/* Product Photo */}
-                  {reqItem.returnImage && (
-                    <div className="shrink-0">
-                      <p className="text-[10px] font-black text-red-950/40 uppercase tracking-widest mb-1.5">Product Photo</p>
-                      <a href={reqItem.returnImage} target="_blank" rel="noreferrer" className="block w-20 h-20 rounded-xl overflow-hidden border-2 border-red-100 hover:border-red-400 transition-colors shadow-sm">
-                        <img src={reqItem.returnImage} alt="Return" className="w-full h-full object-cover" />
-                      </a>
-                    </div>
-                  )}
+                  {/* Damage proof (photos & videos) */}
+                  {(() => {
+                    const proofUrls = reqItem.returnMedia?.length
+                      ? reqItem.returnMedia
+                      : reqItem.returnImage
+                        ? [reqItem.returnImage]
+                        : [];
+                    if (proofUrls.length === 0) return null;
+                    const isVideoUrl = (url) => /\.(mp4|webm|mkv|mov|avi)(\?|$)/i.test(url) || url.includes('/video/');
+                    return (
+                      <div className="shrink-0">
+                        <p className="text-[10px] font-black text-red-950/40 uppercase tracking-widest mb-1.5">Damage Proof</p>
+                        <div className="flex flex-wrap gap-2 max-w-[200px]">
+                          {proofUrls.map((url, i) => (
+                            <a
+                              key={i}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block w-20 h-20 rounded-xl overflow-hidden border-2 border-red-100 hover:border-red-400 transition-colors shadow-sm relative bg-red-50"
+                            >
+                              {isVideoUrl(url) ? (
+                                <>
+                                  <video src={url} className="w-full h-full object-cover" muted />
+                                  <span className="absolute inset-0 flex items-center justify-center bg-red-950/30">
+                                    <span className="material-symbols-outlined text-white text-[28px]">play_circle</span>
+                                  </span>
+                                </>
+                              ) : (
+                                <img src={url} alt={`Proof ${i + 1}`} className="w-full h-full object-cover" />
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Actions */}
                   <div className="flex flex-row md:flex-col gap-2 items-start justify-end shrink-0">
@@ -86,7 +114,7 @@ const AdminReturns = ({ allReturnRequests, pendingReturnsCount, updateItemReturn
                           disabled={isUpdatingReturn}
                           onClick={async () => {
                             try {
-                              await updateItemReturnStatus({ id: order._id, itemId: reqItem._id, status: 'Approved' }).unwrap();
+                              await updateItemReturnStatus({ id: order._id, itemId: reqItem._id?._id || reqItem._id, status: 'Approved' }).unwrap();
                               toast.success('Return/Exchange approved!');
                             } catch (err) { toast.error(err?.data?.message || 'Failed to approve'); }
                           }}
@@ -96,7 +124,7 @@ const AdminReturns = ({ allReturnRequests, pendingReturnsCount, updateItemReturn
                         </button>
                         <button
                           disabled={isUpdatingReturn}
-                          onClick={() => setRejectModal({ isOpen: true, orderId: order._id, itemId: reqItem._id, reason: '' })}
+                          onClick={() => setRejectModal({ isOpen: true, orderId: order._id, itemId: reqItem._id?._id || reqItem._id, reason: '' })}
                           className="flex items-center gap-1.5 px-4 py-2 bg-red-950 hover:bg-black text-white text-xs font-black rounded-xl transition-colors shadow-sm disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[16px]">cancel</span> Reject

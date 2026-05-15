@@ -131,6 +131,22 @@ export const apiSlice = createApi({
     
     getAllOrders: builder.query({ query: () => '/orders', providesTags: ['Order'] }),
     updateOrderStatus: builder.mutation({ query: ({ id, status, courierName, trackingLink }) => ({ url: `/orders/${id}/status`, method: 'PUT', body: { status, courierName, trackingLink } }), invalidatesTags: ['Order'] }),
+    requestItemReturn: builder.mutation({
+      query: ({ id, itemId, reason, requestType, media }) => ({
+        url: `/orders/${id}/items/${itemId}/return`,
+        method: 'POST',
+        body: { reason, requestType, media },
+      }),
+      invalidatesTags: ['Order'],
+    }),
+    updateItemReturnStatus: builder.mutation({
+      query: ({ id, itemId, status, rejectionReason }) => ({
+        url: `/orders/${id}/items/${itemId}/return-status`,
+        method: 'PUT',
+        body: { status, rejectionReason },
+      }),
+      invalidatesTags: ['Order'],
+    }),
     
     createRazorpayOrder: builder.mutation({ query: ({ idempotencyKey, ...data }) => ({ url: '/payments/razorpay/order', method: 'POST', body: data, headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined }) }),
     verifyRazorpayPayment: builder.mutation({ query: (data) => ({ url: '/payments/razorpay/verify', method: 'POST', body: data }), invalidatesTags: ['Order', 'User'] }),
@@ -157,6 +173,7 @@ export const {
   useGetUserProfileQuery, useUpdateUserProfileMutation,
   useGetAllUsersQuery, useToggleUserBanStatusMutation, useUpdateUserRoleMutation, useRequestAdminPromotionMutation, useConfirmAdminPromotionMutation, 
   useCreateOrderMutation, useCreateCodOrderMutation, useGetMyOrdersQuery, useGetAllOrdersQuery, useUpdateOrderStatusMutation,
+  useRequestItemReturnMutation, useUpdateItemReturnStatusMutation,
   useCreateRazorpayOrderMutation, useVerifyRazorpayPaymentMutation, useCreateDemoOrderMutation, useProcessRefundMutation,
   useSubmitContactMessageMutation, useGetAllContactMessagesQuery, useSubscribeNewsletterMutation,
   useGetAllCouponsQuery, useCreateCouponMutation, useDeleteCouponMutation, useToggleCouponMutation, useValidateCouponMutation,

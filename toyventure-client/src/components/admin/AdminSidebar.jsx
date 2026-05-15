@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { key: 'analytics', icon: 'bar_chart',          label: 'Analytics' },
   { key: 'customers', icon: 'group',               label: 'Customers' },
   { key: 'orders',    icon: 'local_shipping',      label: 'Orders' },
+  { key: 'returns',   icon: 'assignment_return',   label: 'Returns' },
   { key: 'promos',    icon: 'sell',                label: 'Promo Codes' },
   { key: 'abandoned', icon: 'shopping_cart_off',   label: 'Abandoned Carts' },
   { key: 'reviews',   icon: 'rate_review',         label: 'Moderation' },
