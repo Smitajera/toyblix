@@ -373,9 +373,6 @@ const Checkout = () => {
         paymentMethod: 'razorpay',
         idempotencyKey: checkoutRequestKey,
       };
-      // #region agent log
-      fetch('http://127.0.0.1:7940/ingest/b612bf23-5ec8-4332-a873-59b574d24a82',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e7f50'},body:JSON.stringify({sessionId:'6e7f50',hypothesisId:'H-D',location:'Checkout.jsx:handleCheckout',message:'razorpay checkout payload',data:{hasCouponCode:!!razorpayPayload.couponCode,discountAmount:razorpayPayload.discountAmount,appliedCouponCode:appliedCoupon?.code||null},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       const checkoutSession = await createRazorpayOrder(razorpayPayload).unwrap();
 
       if (checkoutSession.order?.isPaid) {

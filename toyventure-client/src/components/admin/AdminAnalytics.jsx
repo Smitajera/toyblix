@@ -23,6 +23,46 @@ const TOOLTIP_STYLE = {
   borderRadius: 16,
 };
 
+const normalizeIndianState = (raw) => {
+  if (!raw) return null;
+  let s = String(raw).trim();
+  s = s.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  if (s === 'Orissa') s = 'Odisha';
+  return INDIAN_STATES.includes(s) ? s : null;
+};
+
+const buildIndiaMapOption = ({ areaData, seriesName, valueLabel, pieces, emphasisColor = '#fca5a5', borderColor = '#bfdbfe' }) => ({
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderColor,
+    borderWidth: 1,
+    textStyle: { fontWeight: 'bold' },
+    borderRadius: 16,
+    formatter: (params) => `${params.name}<br/>${valueLabel}: ${params.value || 0}`,
+  },
+  visualMap: {
+    type: 'piecewise',
+    left: 'left',
+    top: 'bottom',
+    pieces,
+    textStyle: { color: '#64748b', fontWeight: 600, fontSize: 11 },
+    itemSymbol: 'roundRect',
+  },
+  series: [{
+    name: seriesName,
+    type: 'map',
+    map: 'India',
+    roam: true,
+    itemStyle: { borderColor: '#cbd5e1', borderWidth: 0.5 },
+    emphasis: {
+      itemStyle: { areaColor: emphasisColor },
+      label: { show: true, color: '#991b1b', fontWeight: 'bold' },
+    },
+    data: areaData,
+  }],
+});
+
 const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
   const [dateRangeFilter, setDateRangeFilter] = useState('7d');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -146,12 +186,23 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
     const revenueDataMap = {};
     dateLabels.forEach(l => (revenueDataMap[l] = 0));
 
-    const topToysMap = {}, categoryMap = {}, cityMap = {}, areaMap = {}, userOrdersMap = {};
-    INDIAN_STATES.forEach(s => (areaMap[s] = 0));
+    const topToysMap = {}, categoryMap = {}, areaMap = {}, returnAreaMap = {}, userOrdersMap = {};
+    INDIAN_STATES.forEach((s) => {
+      areaMap[s] = 0;
+      returnAreaMap[s] = 0;
+    });
 
     let pending = 0, confirmed = 0, cancelled = 0, rto = 0, delivered = 0;
 
     filteredOrders.forEach(order => {
+      const stateName = normalizeIndianState(order.shippingDetails?.state);
+
+      order.orderItems?.forEach((item) => {
+        if (item.returnStatus && item.returnStatus !== 'Not Requested' && stateName) {
+          returnAreaMap[stateName] = (returnAreaMap[stateName] || 0) + (item.qty || 1);
+        }
+      });
+
       // Revenue Chart
       const isActualRevenue = order.paymentStatus === 'paid' && order.orderStatus !== 'cancelled' && order.orderStatus !== 'refunded';
       if (isActualRevenue) {
@@ -168,12 +219,7 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
         const uid = order.user ? (typeof order.user === 'object' ? order.user._id : order.user) : order.shippingDetails?.phone;
         if (uid) userOrdersMap[uid] = (userOrdersMap[uid] || 0) + 1;
         
-        if (order.shippingDetails?.state) {
-          let s = order.shippingDetails.state.trim();
-          s = s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-          if (s === 'Orissa') s = 'Odisha';
-          areaMap[s] = (areaMap[s] || 0) + 1;
-        }
+        if (stateName) areaMap[stateName] = (areaMap[stateName] || 0) + 1;
 
         order.orderItems?.forEach(item => {
           topToysMap[item.title] = (topToysMap[item.title] || 0) + item.qty;
@@ -196,7 +242,9 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
     const revenueData = Object.keys(revenueDataMap).map(date => ({ date, Revenue: revenueDataMap[date] }));
     const topToysData  = Object.keys(topToysMap).map(k => ({ name: k, Sales: topToysMap[k] })).sort((a, b) => b.Sales - a.Sales).slice(0, 5);
     const categoryData = Object.keys(categoryMap).map(k => ({ name: k, value: categoryMap[k] })).sort((a, b) => b.value - a.value);
-    const areaData     = Object.keys(areaMap).map(k => ({ name: k, value: areaMap[k] }));
+    const areaData = Object.keys(areaMap).map((k) => ({ name: k, value: areaMap[k] }));
+    const returnAreaData = Object.keys(returnAreaMap).map((k) => ({ name: k, value: returnAreaMap[k] }));
+    const totalReturnUnits = Object.values(returnAreaMap).reduce((sum, n) => sum + n, 0);
 
     let newC = 0, repC = 0;
     Object.values(userOrdersMap).forEach(c => (c > 1 ? repC++ : newC++));
@@ -213,7 +261,17 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
       { name: 'Delivered',    value: delivered,  color: '#16a34a' },
     ].filter(d => d.value > 0);
 
-    return { revenueData, topToysData, fulfillmentData, categoryData, areaData, customerData, totalFiltered: filteredOrders.length };
+    return {
+      revenueData,
+      topToysData,
+      fulfillmentData,
+      categoryData,
+      areaData,
+      returnAreaData,
+      totalReturnUnits,
+      customerData,
+      totalFiltered: filteredOrders.length,
+    };
   }, [orders, dateRangeFilter, customStartDate, customEndDate, productsData, filterProduct, filterCategory, filterStatus, filterPayment, filterCustomer]);
 
   if (!analyticsData) return null;
@@ -421,36 +479,59 @@ const AdminAnalytics = ({ orders, productsData, onExportCSV }) => {
           </h3>
           <div className="h-[350px] w-full">
             <ReactECharts
-              option={{
-                tooltip: { 
-                  trigger: 'item', 
-                  backgroundColor: 'rgba(255,255,255,0.95)', 
-                  borderColor: '#bfdbfe', 
-                  borderWidth: 1, 
-                  textStyle: { fontWeight: 'bold' }, 
-                  borderRadius: 16, 
-                  formatter: (params) => {
-                    return `${params.name}<br/>Orders: ${params.value || 0}`;
-                  }
-                },
-                visualMap: { 
-                  type: 'piecewise',
-                  left: 'left', 
-                  top: 'bottom', 
-                  pieces: [
-                    { min: 50, label: '50+ Orders', color: '#1e3a8a' },
-                    { min: 20, max: 49, label: '20-49 Orders', color: '#1d4ed8' },
-                    { min: 5, max: 19, label: '5-19 Orders', color: '#3b82f6' },
-                    { min: 1, max: 4, label: '1-4 Orders', color: '#93c5fd' },
-                    { value: 0, label: '0 Orders', color: '#f8fafc' }
-                  ],
-                  textStyle: { color: '#64748b', fontWeight: 600, fontSize: 11 },
-                  itemSymbol: 'roundRect'
-                },
-                series: [{ name: 'Orders', type: 'map', map: 'India', roam: true, itemStyle: { borderColor: '#cbd5e1', borderWidth: 0.5 }, emphasis: { itemStyle: { areaColor: '#fca5a5' }, label: { show: true, color: '#991b1b', fontWeight: 'bold' } }, data: analyticsData.areaData }]
-              }}
+              option={buildIndiaMapOption({
+                areaData: analyticsData.areaData,
+                seriesName: 'Orders',
+                valueLabel: 'Orders',
+                pieces: [
+                  { min: 50, label: '50+ Orders', color: '#1e3a8a' },
+                  { min: 20, max: 49, label: '20-49 Orders', color: '#1d4ed8' },
+                  { min: 5, max: 19, label: '5-19 Orders', color: '#3b82f6' },
+                  { min: 1, max: 4, label: '1-4 Orders', color: '#93c5fd' },
+                  { value: 0, label: '0 Orders', color: '#f8fafc' },
+                ],
+              })}
               style={{ height: '100%', width: '100%' }}
             />
+          </div>
+        </div>
+
+        {/* Return Analysis Map */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-red-50 shadow-sm lg:col-span-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <h3 className="text-xl font-black text-red-950 flex items-center gap-2">
+              <span className="material-symbols-outlined text-orange-500">assignment_return</span>
+              Return Analysis (India)
+            </h3>
+            <span className="text-xs font-black uppercase tracking-widest text-orange-700 bg-orange-50 border border-orange-200 px-4 py-2 rounded-full w-max">
+              {analyticsData.totalReturnUnits} return units in range
+            </span>
+          </div>
+          <div className="h-[380px] w-full">
+            {analyticsData.totalReturnUnits > 0 ? (
+              <ReactECharts
+                option={buildIndiaMapOption({
+                  areaData: analyticsData.returnAreaData,
+                  seriesName: 'Returns',
+                  valueLabel: 'Returns',
+                  borderColor: '#fed7aa',
+                  emphasisColor: '#fb923c',
+                  pieces: [
+                    { min: 20, label: '20+ Returns', color: '#7f1d1d' },
+                    { min: 10, max: 19, label: '10-19 Returns', color: '#dc2626' },
+                    { min: 5, max: 9, label: '5-9 Returns', color: '#f97316' },
+                    { min: 1, max: 4, label: '1-4 Returns', color: '#fdba74' },
+                    { value: 0, label: '0 Returns', color: '#f8fafc' },
+                  ],
+                })}
+                style={{ height: '100%', width: '100%' }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-red-950/40 font-bold gap-2">
+                <span className="material-symbols-outlined text-[48px] text-orange-100">map</span>
+                No return requests in the selected date range.
+              </div>
+            )}
           </div>
         </div>
 
