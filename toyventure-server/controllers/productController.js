@@ -1,5 +1,7 @@
 const sendEmail = require('../utils/sendEmail');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
+const { getProductId } = require('../utils/orderInventory');
 const fs = require('fs');
 const path = require('path');
 const xlsx = require('xlsx');
@@ -168,14 +170,40 @@ const getProductById = async (req, res) => {
     }
 };
 
+const userHasDeliveredProduct = async (userId, productId) => {
+    const orders = await Order.find({
+        user: userId,
+        orderStatus: { $in: ['delivered', 'fulfilled'] },
+    }).select('orderItems');
+    const pid = String(productId);
+    return orders.some((order) =>
+        order.orderItems.some((item) => String(getProductId(item)) === pid)
+    );
+};
+
 const createProductReview = async (req, res) => {
     try {
         const { rating, comment, images } = req.body;
         const product = await Product.findById(req.params.id);
         if (product) {
-            const alreadyReviewed = product.reviews.find((r) => r.name.toString() === req.user.name.toString());
+            const hasDelivered = await userHasDeliveredProduct(req.user._id, product._id);
+            if (!hasDelivered) {
+                return res.status(403).json({ message: 'You can only review products from a delivered order.' });
+            }
+
+            const alreadyReviewed = product.reviews.find(
+                (r) => r.user && r.user.toString() === req.user._id.toString()
+            );
             if (alreadyReviewed) return res.status(400).json({ message: 'You have already reviewed this toy.' });
-            const review = { name: req.user.name, rating: Number(rating), comment, images: images || [] };
+
+            const review = {
+                user: req.user._id,
+                name: req.user.name,
+                rating: Number(rating),
+                comment,
+                images: images || [],
+                isVerifiedPurchase: true,
+            };
             product.reviews.push(review);
             product.numReviews = product.reviews.length;
             product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;

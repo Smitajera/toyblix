@@ -119,12 +119,16 @@ const markOrderPaid = async (order, paymentDetails) => {
 
   if (!order.isPaid) {
     const inventoryResult = await commitInventoryForOrder(order.orderItems);
+    // #region agent log
+    fetch('http://127.0.0.1:7940/ingest/b612bf23-5ec8-4332-a873-59b574d24a82',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e7f50'},body:JSON.stringify({sessionId:'6e7f50',hypothesisId:'H-B',location:'paymentController.js:markOrderPaid',message:'inventory commit result',data:{orderId:String(order._id),committed:inventoryResult.committed,reason:inventoryResult.reason||null,itemCount:order.orderItems?.length},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
+    // #endregion
 
     if (!inventoryResult.committed) {
       order.isPaid = true;
       order.paidAt = new Date();
       order.paymentStatus = 'paid';
       order.orderStatus = 'payment_review';
+      order.inventoryCommitted = false;
       order.inventoryIssue = inventoryResult.reason;
       order.paymentFailureReason = null;
       order.razorpay = {
@@ -397,12 +401,11 @@ const verifyRazorpayPayment = async (req, res, next) => {
       paymentReviewed: paymentResult.paymentReviewed,
     });
 
-    // Fire and forget invoice email
-    sendOrderConfirmationAndInvoice(order._id).catch(console.error);
-
-    // Track coupon analytics on successful payment
-    if (order.couponCode) {
-      incrementCouponUsage(order.couponCode, order.discountAmount, order.totalPrice).catch(console.error);
+    if (!paymentResult.paymentReviewed) {
+      sendOrderConfirmationAndInvoice(order._id).catch(console.error);
+      if (order.couponCode) {
+        incrementCouponUsage(order.couponCode, order.discountAmount, order.totalPrice).catch(console.error);
+      }
     }
 
     res.status(200).json({
@@ -424,6 +427,9 @@ const handleRazorpayWebhook = async (req, res, next) => {
 
     const signature = req.get('x-razorpay-signature');
     const rawBody = req.rawBody;
+    // #region agent log
+    fetch('http://127.0.0.1:7940/ingest/b612bf23-5ec8-4332-a873-59b574d24a82',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e7f50'},body:JSON.stringify({sessionId:'6e7f50',hypothesisId:'H-C',location:'paymentController.js:handleRazorpayWebhook',message:'webhook payload check',data:{hasRawBody:!!rawBody,hasSignature:!!signature,bodyType:typeof req.body},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
+    // #endregion
 
     if (!rawBody || !signature) {
       return res.status(400).json({ message: 'Missing webhook signature or payload.' });

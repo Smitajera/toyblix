@@ -133,7 +133,17 @@ const commitInventoryForOrder = async (orderItems) => {
     for (const item of orderItems) {
       const productId = getProductId(item);
       const quantity = Number(item.qty);
-      const vIdx = item._variantIndex;
+      let vIdx = item._variantIndex;
+      if ((vIdx == null || vIdx < 0) && item.variant) {
+        const product = await Product.findById(productId);
+        if (product) {
+          const resolved = findVariantIndex(product, item.variant);
+          if (resolved >= 0) vIdx = resolved;
+        }
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7940/ingest/b612bf23-5ec8-4332-a873-59b574d24a82',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e7f50'},body:JSON.stringify({sessionId:'6e7f50',hypothesisId:'H-A',location:'orderInventory.js:commitInventoryForOrder',message:'inventory commit line',data:{productId:String(productId),variant:item.variant||null,vIdx:vIdx??null,usesParentStock:vIdx==null||vIdx<0},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
+      // #endregion
 
       if (vIdx != null && vIdx >= 0) {
         const path = `variants.${vIdx}.countInStock`;

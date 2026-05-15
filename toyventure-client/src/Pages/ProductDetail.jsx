@@ -66,9 +66,12 @@ const ProductDetail = () => {
 
   const relatedProducts = allProductsData?.products?.filter(p => p._id !== id).slice(0, 4) || [];
 
-  const hasBoughtAndDelivered = myOrders?.some(order => 
-    ['delivered', 'fulfilled'].includes(order.orderStatus) && 
-    order.orderItems.some(item => (item.product === id || item._id === id || item.title === product?.title))
+  const hasBoughtAndDelivered = myOrders?.some((order) =>
+    ['delivered', 'fulfilled'].includes(order.orderStatus) &&
+    order.orderItems.some((item) => {
+      const productId = item._id?._id || item._id || item.product;
+      return String(productId) === String(id);
+    })
   );
 
   useEffect(() => { 
@@ -665,9 +668,11 @@ const ProductDetail = () => {
                           <div>
                             <h4 className="font-bold text-zinc-800 flex items-center gap-1.5">
                               {review.name}
-                              <span className="bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-green-200 flex items-center gap-0.5">
-                                <span className="material-symbols-outlined text-[10px]">verified</span> Verified
-                              </span>
+                              {review.isVerifiedPurchase && (
+                                <span className="bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-green-200 flex items-center gap-0.5">
+                                  <span className="material-symbols-outlined text-[10px]">verified</span> Verified
+                                </span>
+                              )}
                             </h4>
                             <p className="text-xs text-zinc-400 font-medium">{review.createdAt ? review.createdAt.substring(0, 10) : 'Just now'}</p>
                           </div>
@@ -713,6 +718,7 @@ const ProductDetail = () => {
 
           <div className="lg:col-span-5">
             {userInfo ? (
+              hasBoughtAndDelivered ? (
               <div className="card-surface p-8 rounded-[2.5rem] shadow-soft sticky top-32 border border-white">
                 <h3 className="text-xl font-black text-zinc-800 mb-6">Write a Review</h3>
                 <form onSubmit={submitReviewHandler} className="space-y-5">
@@ -771,6 +777,18 @@ const ProductDetail = () => {
                   </button>
                 </form>
               </div>
+              ) : (
+              <div className="card-surface p-8 rounded-[2.5rem] shadow-soft border border-white text-center sticky top-32">
+                <span className="material-symbols-outlined text-[48px] text-zinc-300 mb-4 block">local_shipping</span>
+                <h3 className="text-xl font-black text-zinc-800 mb-2">Delivered orders only</h3>
+                <p className="text-zinc-500 font-medium text-sm mb-6">
+                  You can review this product after it has been delivered to you.
+                </p>
+                <Link to="/shop" className="inline-block w-full py-3 bg-primary-container text-white font-black text-sm rounded-xl hover:bg-red-800 transition-all shadow-md">
+                  Continue Shopping
+                </Link>
+              </div>
+              )
             ) : (
               <div className="card-surface p-8 rounded-[2.5rem] shadow-soft border border-white text-center sticky top-32">
                 <span className="material-symbols-outlined text-[48px] text-zinc-300 mb-4 block">lock</span>

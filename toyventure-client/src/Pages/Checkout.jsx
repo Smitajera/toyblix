@@ -360,7 +360,7 @@ const Checkout = () => {
         return;
       }
 
-      const checkoutSession = await createRazorpayOrder({
+      const razorpayPayload = {
         orderItems: cartItems,
         shippingDetails,
         totalPrice,
@@ -369,10 +369,14 @@ const Checkout = () => {
         giftWrapFee,
         codFee,
         discountAmount: appliedCoupon?.discount || 0,
+        couponCode: appliedCoupon?.code || null,
         paymentMethod: 'razorpay',
         idempotencyKey: checkoutRequestKey,
-
-      }).unwrap();
+      };
+      // #region agent log
+      fetch('http://127.0.0.1:7940/ingest/b612bf23-5ec8-4332-a873-59b574d24a82',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6e7f50'},body:JSON.stringify({sessionId:'6e7f50',hypothesisId:'H-D',location:'Checkout.jsx:handleCheckout',message:'razorpay checkout payload',data:{hasCouponCode:!!razorpayPayload.couponCode,discountAmount:razorpayPayload.discountAmount,appliedCouponCode:appliedCoupon?.code||null},timestamp:Date.now(),runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+      const checkoutSession = await createRazorpayOrder(razorpayPayload).unwrap();
 
       if (checkoutSession.order?.isPaid) {
         dispatch(clearCart());

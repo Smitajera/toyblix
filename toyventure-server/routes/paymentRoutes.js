@@ -4,7 +4,6 @@ const {
   createRazorpayOrder,
   createDemoOrder,
   verifyRazorpayPayment,
-  handleRazorpayWebhook,
   processRefund,
 } = require('../controllers/paymentController');
 const { protect, admin } = require('../middleware/authMiddleware');
@@ -18,7 +17,7 @@ const demoCheckoutGuard = (req, res, next) => {
 
 router.post('/razorpay/order', protect, createRazorpayOrder);
 router.post('/razorpay/verify', protect, verifyRazorpayPayment);
-router.post('/razorpay/webhook', handleRazorpayWebhook);
+// Webhook is mounted in server.js with express.raw() for signature verification
 router.post('/refund/:orderId', protect, admin, processRefund);
 
 router.post('/demo', protect, demoCheckoutGuard, createDemoOrder);

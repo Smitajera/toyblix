@@ -103,7 +103,11 @@ export const apiSlice = createApi({
     }),
 
     getProductById: builder.query({ query: (productId) => `/products/${productId}`, providesTags: (result, error, id) => [{ type: 'Product', id }] }),
-    createReview: builder.mutation({ query: (data) => ({ url: `/products/${data.productId}/reviews`, method: 'POST', body: data }), invalidatesTags: (result, error, arg) => [{ type: 'Product', id: arg.productId }] }),
+    createReview: builder.mutation({
+      query: (data) => ({ url: `/products/${data.productId}/reviews`, method: 'POST', body: data }),
+      invalidatesTags: (result, error, arg) => [{ type: 'Product', id: arg.productId }],
+      onQueryStarted: async (_, { queryFulfilled }) => { try { await queryFulfilled; clearProductCache(); } catch {} },
+    }),
     deleteReview: builder.mutation({ query: ({ productId, reviewId }) => ({ url: `/products/${productId}/reviews/${reviewId}`, method: 'DELETE' }), invalidatesTags: (result, error, arg) => [{ type: 'Product', id: arg.productId }, 'Product'] }),
     notifyMeWhenAvailable: builder.mutation({ query: (data) => ({ url: `/products/${data.productId}/notify`, method: 'POST', body: { email: data.email } }) }),
     

@@ -79,6 +79,23 @@ const apiLimiter = rateLimit({
 // Apply rate limiter to all API routes
 app.use('/api/', apiLimiter);
 
+// Razorpay webhook must receive raw body for signature verification (before express.json)
+const { handleRazorpayWebhook } = require('./controllers/paymentController');
+app.post(
+  '/api/payments/razorpay/webhook',
+  express.raw({ type: 'application/json', limit: '1mb' }),
+  (req, res, next) => {
+    req.rawBody = req.body;
+    try {
+      req.body = req.body?.length ? JSON.parse(req.body.toString('utf8')) : {};
+    } catch {
+      return res.status(400).json({ message: 'Invalid JSON payload.' });
+    }
+    next();
+  },
+  handleRazorpayWebhook
+);
+
 // Body parsing middlewares
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

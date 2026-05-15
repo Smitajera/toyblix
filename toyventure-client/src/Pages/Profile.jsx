@@ -340,7 +340,7 @@ const Profile = () => {
                         <div className="mt-4 border-t border-red-100/60 pt-4 space-y-3">
                            {order.orderItems?.map((item, idx) => {
                               const isDelivered = order.orderStatus === 'delivered' || order.orderStatus === 'fulfilled';
-                              const deliveryDate = order.statusTimestamps?.deliveredAt || order.createdAt;
+                              const deliveryDate = order.statusTimestamps?.deliveredAt || order.deliveredAt || order.createdAt;
                               const daysSinceDelivery = (Date.now() - new Date(deliveryDate).getTime()) / (1000 * 3600 * 24);
                               const returnStatus = item.returnStatus || 'Not Requested';
                               const isEligibleForReturn = isDelivered && daysSinceDelivery <= 7 && returnStatus === 'Not Requested';
