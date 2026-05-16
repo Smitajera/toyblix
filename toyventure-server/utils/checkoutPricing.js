@@ -2,6 +2,7 @@ const Coupon = require('../models/Coupon');
 const {
   validateOrderPayload,
   enrichOrderItemsFromCatalog,
+  assertPaymentMethodsAllowed,
   toPersistenceOrderItems,
 } = require('./orderInventory');
 
@@ -61,6 +62,7 @@ const resolveCheckoutTotals = async (body, mode) => {
   validateOrderPayload({ orderItems: body.orderItems, shippingDetails: body.shippingDetails, totalPrice: clientTotal });
 
   const enrichedItems = await enrichOrderItemsFromCatalog(body.orderItems);
+  assertPaymentMethodsAllowed(enrichedItems, mode);
   const subtotal = enrichedItems.reduce((acc, line) => acc + line.price * line.qty, 0);
 
   const { couponDiscount, normalizedCode } = await couponDiscountForSubtotal(body.couponCode, subtotal);

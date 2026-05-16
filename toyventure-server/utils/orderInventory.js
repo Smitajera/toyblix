@@ -89,14 +89,27 @@ const enrichOrderItemsFromCatalog = async (orderItems) => {
       variant: resolvedVariant,
       _id: getProductId(item),
       _variantIndex: variantIndex,
+      allowCod: product.allowCod !== false,
+      allowPrepaid: product.allowPrepaid !== false,
     });
   }
   return out;
 };
 
+const assertPaymentMethodsAllowed = (enrichedItems, mode) => {
+  for (const item of enrichedItems) {
+    if (mode === 'cod' && item.allowCod === false) {
+      throw new Error(`"${item.title}" is not available for Cash on Delivery. Remove it or choose Pay Online.`);
+    }
+    if ((mode === 'razorpay' || mode === 'demo') && item.allowPrepaid === false) {
+      throw new Error(`"${item.title}" is not available for online payment. Remove it or choose Cash on Delivery.`);
+    }
+  }
+};
+
 const toPersistenceOrderItems = (items) =>
   items.map((line) => {
-    const { _variantIndex, ...rest } = line;
+    const { _variantIndex, allowCod, allowPrepaid, ...rest } = line;
     return rest;
   });
 
@@ -194,6 +207,7 @@ module.exports = {
   normalizeOrderItems,
   validateOrderPayload,
   assertInventoryAvailable,
+  assertPaymentMethodsAllowed,
   commitInventoryForOrder,
   enrichOrderItemsFromCatalog,
   toPersistenceOrderItems,

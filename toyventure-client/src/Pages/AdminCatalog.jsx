@@ -24,7 +24,7 @@ const AdminCatalog = () => {
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   
   const [editingProduct, setEditingProduct] = useState({
-    title: '', price: '', oldPrice: '', description: '', img: '', images: [], tag: '', category: [], countInStock: '', isPopular: false, isBestSelling: false, isLimitedEdition: false, videoUrl: '', sku: '', isDraft: false,
+    title: '', price: '', oldPrice: '', description: '', img: '', images: [], tag: '', category: [], countInStock: '', isPopular: false, isBestSelling: false, isLimitedEdition: false, videoUrl: '', sku: '', isDraft: false, allowCod: true, allowPrepaid: true,
     variants: [],
     specifications: [] // Phase 2: Added specifications array
   });
@@ -115,6 +115,9 @@ const AdminCatalog = () => {
 
   const handleUpdateProductSubmit = async (e) => {
     e.preventDefault();
+    if (!editingProduct.allowCod && !editingProduct.allowPrepaid) {
+      return toast.error('Enable at least one payment method: Cash on Delivery or Pay Online.');
+    }
     try {
       const formattedProduct = {
         ...editingProduct,
@@ -401,6 +404,29 @@ const AdminCatalog = () => {
                         <input type="checkbox" name="isLimitedEdition" checked={editingProduct.isLimitedEdition || false} onChange={(e) => setEditingProduct({...editingProduct, isLimitedEdition: e.target.checked})} className="sr-only peer" />
                         <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
                       </label>
+                    </div>
+
+                    <div className="mt-4 p-6 bg-emerald-50/40 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
+                      <div>
+                        <label className="text-lg font-black text-emerald-950 block">Payment Methods</label>
+                        <span className="text-sm text-emerald-950/60 font-bold">Control which checkout options customers can use for this product.</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label className="flex items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-emerald-100 cursor-pointer">
+                          <div>
+                            <p className="font-black text-red-950 text-sm">Cash on Delivery</p>
+                            <p className="text-xs text-red-950/50 font-medium">Allow COD orders</p>
+                          </div>
+                          <input type="checkbox" checked={editingProduct.allowCod !== false} onChange={(e) => setEditingProduct({ ...editingProduct, allowCod: e.target.checked })} className="w-5 h-5 accent-red-600 rounded" />
+                        </label>
+                        <label className="flex items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-emerald-100 cursor-pointer">
+                          <div>
+                            <p className="font-black text-red-950 text-sm">Pay Online (Prepaid)</p>
+                            <p className="text-xs text-red-950/50 font-medium">Allow Razorpay / UPI / card</p>
+                          </div>
+                          <input type="checkbox" checked={editingProduct.allowPrepaid !== false} onChange={(e) => setEditingProduct({ ...editingProduct, allowPrepaid: e.target.checked })} className="w-5 h-5 accent-red-600 rounded" />
+                        </label>
+                      </div>
                     </div>
 
                     <div className="space-y-2 mt-4 p-6 bg-zinc-100 rounded-3xl border border-zinc-200 flex items-center justify-between shadow-sm">
@@ -696,6 +722,12 @@ const AdminCatalog = () => {
                                 <span className="material-symbols-outlined text-[12px]">star</span> Popular
                             </span>
                           )}
+                          {!product.isDraft && product.allowCod === false && (
+                            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-full border border-amber-200 mt-1.5 ml-1 inline-block">No COD</span>
+                          )}
+                          {!product.isDraft && product.allowPrepaid === false && (
+                            <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-full border border-blue-200 mt-1.5 ml-1 inline-block">Prepaid only off</span>
+                          )}
                         </td>
                         <td className="p-5 pr-8 text-right">
                           <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
@@ -717,6 +749,8 @@ const AdminCatalog = () => {
                                   tag: product.tag || '',
                                   sku: product.sku || '',
                                   isDraft: product.isDraft || false,
+                                  allowCod: product.allowCod !== false,
+                                  allowPrepaid: product.allowPrepaid !== false,
                                   specifications: product.specifications || [] // Phase 2: Load specs into state
                                 }); 
                                 setIsCreatingNew(false); setIsFormOpen(true); window.scrollTo(0, 0); 

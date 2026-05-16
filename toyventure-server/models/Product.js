@@ -123,6 +123,8 @@ const productSchema = mongoose.Schema(
     isLimitedEdition: { type: Boolean, default: false },
     videoUrl: { type: String, default: '' },
     isDraft: { type: Boolean, default: false },
+    allowCod: { type: Boolean, default: true },
+    allowPrepaid: { type: Boolean, default: true },
     notifyList: [{ type: String }],
     variants: [variantSchema] 
   },

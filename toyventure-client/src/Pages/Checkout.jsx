@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -128,6 +128,34 @@ const Checkout = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [checkoutRequestKey] = useState(() => createCheckoutRequestKey());
+
+  const itemAllowsPayment = (item, method) =>
+    method === 'cod' ? item.allowCod !== false : item.allowPrepaid !== false;
+
+  const cartAllowsCod = useMemo(
+    () => cartItems.length > 0 && cartItems.every((item) => itemAllowsPayment(item, 'cod')),
+    [cartItems]
+  );
+  const cartAllowsPrepaid = useMemo(
+    () => cartItems.length > 0 && cartItems.every((item) => itemAllowsPayment(item, 'razorpay')),
+    [cartItems]
+  );
+  const blockedCodItems = useMemo(
+    () => cartItems.filter((item) => !itemAllowsPayment(item, 'cod')),
+    [cartItems]
+  );
+  const blockedPrepaidItems = useMemo(
+    () => cartItems.filter((item) => !itemAllowsPayment(item, 'razorpay')),
+    [cartItems]
+  );
+
+  useEffect(() => {
+    if (paymentMethod === 'cod' && !cartAllowsCod && cartAllowsPrepaid) {
+      setPaymentMethod('razorpay');
+    } else if (paymentMethod === 'razorpay' && !cartAllowsPrepaid && cartAllowsCod) {
+      setPaymentMethod('cod');
+    }
+  }, [cartAllowsCod, cartAllowsPrepaid, paymentMethod]);
 
   // Coupon State
   const [validateCoupon, { isLoading: isValidatingCoupon }] = useValidateCouponMutation();
@@ -308,6 +336,19 @@ const Checkout = () => {
     if (cartItems.length === 0) {
       toast.error('Your cart is empty. Add items before checking out.');
       navigate('/shop');
+      return;
+    }
+
+    if (!cartAllowsCod && !cartAllowsPrepaid) {
+      toast.error('These products cannot be purchased with any available payment method.');
+      return;
+    }
+    if (paymentMethod === 'cod' && !cartAllowsCod) {
+      toast.error('Cash on Delivery is not available for one or more items in your cart.');
+      return;
+    }
+    if (paymentMethod === 'razorpay' && !cartAllowsPrepaid) {
+      toast.error('Online payment is not available for one or more items in your cart.');
       return;
     }
 
@@ -515,20 +556,35 @@ const Checkout = () => {
               <h1 className="text-2xl font-black text-zinc-800">Payment Options</h1>
             </div>
 
+            {(!cartAllowsCod || !cartAllowsPrepaid) && (
+              <div className="mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-sm text-amber-900 font-medium">
+                {!cartAllowsCod && blockedCodItems.length > 0 && (
+                  <p className="mb-1">
+                    <span className="font-black">COD unavailable</span> for: {blockedCodItems.map((i) => i.title).join(', ')}
+                  </p>
+                )}
+                {!cartAllowsPrepaid && blockedPrepaidItems.length > 0 && (
+                  <p>
+                    <span className="font-black">Pay Online unavailable</span> for: {blockedPrepaidItems.map((i) => i.title).join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <label className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col gap-2 shadow-sm hover:shadow-md ${paymentMethod === 'cod' ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60'}`}>
+              <label className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-2 shadow-sm ${cartAllowsCod ? 'cursor-pointer hover:shadow-md' : 'opacity-50 cursor-not-allowed'} ${paymentMethod === 'cod' ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60'}`}>
                 <div className="flex items-center justify-between">
                   <span className="material-symbols-outlined text-primary-container text-[28px]">local_mall</span>
-                  <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="w-5 h-5 text-primary-container focus:ring-primary-container" />
+                  <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} disabled={!cartAllowsCod} onChange={() => setPaymentMethod('cod')} className="w-5 h-5 text-primary-container focus:ring-primary-container disabled:opacity-40" />
                 </div>
                 <span className="font-black text-zinc-800 text-lg">Cash on Delivery</span>
                 <span className="text-xs text-zinc-500 font-medium">Pay with cash when your package arrives at your doorstep.</span>
               </label>
 
-              <label className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex flex-col gap-2 shadow-sm hover:shadow-md ${paymentMethod === 'razorpay' ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60'}`}>
+              <label className={`p-5 rounded-2xl border-2 transition-all flex flex-col gap-2 shadow-sm ${cartAllowsPrepaid ? 'cursor-pointer hover:shadow-md' : 'opacity-50 cursor-not-allowed'} ${paymentMethod === 'razorpay' ? 'border-primary-container bg-primary-container/5' : 'border-white bg-white/60'}`}>
                 <div className="flex items-center justify-between">
                   <span className="material-symbols-outlined text-primary-container text-[28px]">account_balance_wallet</span>
-                  <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} className="w-5 h-5 text-primary-container focus:ring-primary-container" />
+                  <input type="radio" name="payment" value="razorpay" checked={paymentMethod === 'razorpay'} disabled={!cartAllowsPrepaid} onChange={() => setPaymentMethod('razorpay')} className="w-5 h-5 text-primary-container focus:ring-primary-container disabled:opacity-40" />
                 </div>
                 <span className="font-black text-zinc-800 text-lg">Pay Online</span>
                 <span className="text-xs text-zinc-500 font-medium">Securely pay via Credit/Debit Card, UPI, or NetBanking.</span>
@@ -712,7 +768,7 @@ const Checkout = () => {
               <button
                 type="submit"
                 form="checkout-form"
-                disabled={isBusy}
+                disabled={isBusy || (!cartAllowsCod && !cartAllowsPrepaid)}
                 className={`w-full py-4 mt-8 text-white font-black text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl disabled:opacity-50 group ${paymentMethod === 'cod' ? 'bg-red-600 hover:bg-red-700' : 'bg-zinc-900 hover:bg-black'}`}
               >
                 {isBusy ? 'Processing...' : (paymentMethod === 'cod' ? `Place Order • Rs ${totalPrice.toLocaleString('en-IN')}` : `Pay Rs ${totalPrice.toLocaleString('en-IN')}`)}

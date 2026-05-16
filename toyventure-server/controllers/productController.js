@@ -272,6 +272,8 @@ const createProduct = async (req, res) => {
             isBestSelling: false,
             isLimitedEdition: false,
             isDraft: true, // NEW: Creates template securely hidden as a draft!
+            allowCod: true,
+            allowPrepaid: true,
             videoUrl: '',
             numReviews: 0,
             description: 'Enter a product description here...',
@@ -288,7 +290,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         // FIX 1: Added 'specifications' to the destructuring list so the backend doesn't ignore it
-        const { title, price, description, img, tag, category, oldPrice, countInStock, images, variants, isPopular, isBestSelling, isLimitedEdition, videoUrl, sku, isDraft, specifications } = req.body; 
+        const { title, price, description, img, tag, category, oldPrice, countInStock, images, variants, isPopular, isBestSelling, isLimitedEdition, videoUrl, sku, isDraft, specifications, allowCod, allowPrepaid } = req.body; 
         const product = await Product.findById(req.params.id);
 
         if (product) {
@@ -319,6 +321,12 @@ const updateProduct = async (req, res) => {
             product.isBestSelling = isBestSelling !== undefined ? (isBestSelling === 'true' || isBestSelling === true) : false;
             product.isLimitedEdition = isLimitedEdition !== undefined ? (isLimitedEdition === 'true' || isLimitedEdition === true) : false;
             product.isDraft = isDraft !== undefined ? (isDraft === 'true' || isDraft === true) : false;
+            product.allowCod = allowCod !== undefined ? (allowCod === 'true' || allowCod === true) : true;
+            product.allowPrepaid = allowPrepaid !== undefined ? (allowPrepaid === 'true' || allowPrepaid === true) : true;
+
+            if (!product.allowCod && !product.allowPrepaid) {
+                return res.status(400).json({ message: 'Enable at least one payment method: Cash on Delivery or Pay Online.' });
+            }
 
             if (variants) product.variants = variants;
             if (images && images.length > 0) {
