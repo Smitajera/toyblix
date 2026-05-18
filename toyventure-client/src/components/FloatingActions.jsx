@@ -92,7 +92,7 @@ const FloatingActions = () => {
         }));
 
     try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
         const response = await fetch(`${apiBaseUrl}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

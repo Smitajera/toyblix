@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 const resolveImage = (imgPath) => {
   if (!imgPath) return 'https://via.placeholder.com/400x400?text=No+Image';
   if (imgPath.startsWith('http') || imgPath.startsWith('data:')) return imgPath;
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
   const baseUrl = apiBaseUrl.replace('/api', '');
   return `${baseUrl}${imgPath}`;
 };
@@ -59,7 +59,7 @@ const Profile = () => {
     skip: !isAdmin
   });
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 
   useEffect(() => {
@@ -130,7 +130,7 @@ const Profile = () => {
       setDownloadingOrderIds((current) => ({ ...current, [orderId]: true }));
       const token = sessionStorage.getItem('token');
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
       const response = await fetch(`${baseUrl}/orders/${orderId}/invoice`, {
         method: 'GET',

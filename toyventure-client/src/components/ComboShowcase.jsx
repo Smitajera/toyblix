@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useGetCombosQuery } from '../features/api/apiSlice';
 import { COMBO_AGE_GROUPS, getComboAgeLabel } from '../constants/comboAgeGroups';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 const ASSET_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL || API_BASE_URL.replace(/\/api\/?$/, '');
 
 const resolveImage = (img) => {

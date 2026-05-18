@@ -41,7 +41,7 @@ const resolveImage = (imgPath) => {
   if (!imgPath) return 'https://via.placeholder.com/400x400?text=No+Image';
   if (imgPath.startsWith('http') || imgPath.startsWith('data:')) return imgPath;
   
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
   const baseUrl = apiBaseUrl.replace('/api', '');
   return `${baseUrl}${imgPath}`;
 };

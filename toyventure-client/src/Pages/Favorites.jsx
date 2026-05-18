@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { toggleFavorite } from '../features/wishlist/wishlistSlice';
 import ScrollReveal from '../components/ScrollReveal';
 
-const ASSET_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:5000';
+const ASSET_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 const resolveImage = (imgSrc) => {
   if (!imgSrc) return '';
