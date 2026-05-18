@@ -74,7 +74,7 @@ const clearProductCache = () => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: customBaseQuery, 
-  tagTypes: ['Product', 'Order', 'User', 'Contact', 'Coupon'],
+  tagTypes: ['Product', 'Order', 'User', 'Contact', 'Coupon', 'ToyCategory'],
   endpoints: (builder) => ({
     
    getProducts: builder.query({
@@ -167,6 +167,32 @@ export const apiSlice = createApi({
     toggleCoupon: builder.mutation({ query: (id) => ({ url: `/coupons/${id}/toggle`, method: 'PUT' }), invalidatesTags: ['Coupon'] }),
     validateCoupon: builder.mutation({ query: (data) => ({ url: '/coupons/validate', method: 'POST', body: data }) }),
 
+    getToyCategories: builder.query({
+      query: () => '/toy-categories',
+      providesTags: ['ToyCategory'],
+    }),
+    getAllToyCategoriesAdmin: builder.query({
+      query: () => '/toy-categories/admin',
+      providesTags: ['ToyCategory'],
+    }),
+    createToyCategory: builder.mutation({
+      query: (data) => ({ url: '/toy-categories', method: 'POST', body: data }),
+      invalidatesTags: ['ToyCategory', 'Product'],
+    }),
+    updateToyCategory: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/toy-categories/${id}`, method: 'PUT', body: data }),
+      invalidatesTags: ['ToyCategory', 'Product'],
+      onQueryStarted: async (_, { queryFulfilled }) => { try { await queryFulfilled; clearProductCache(); } catch {} },
+    }),
+    deleteToyCategory: builder.mutation({
+      query: (id) => ({ url: `/toy-categories/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['ToyCategory'],
+    }),
+    toggleToyCategory: builder.mutation({
+      query: (id) => ({ url: `/toy-categories/${id}/toggle`, method: 'PUT' }),
+      invalidatesTags: ['ToyCategory'],
+    }),
+
   }),
 });
 
@@ -181,4 +207,5 @@ export const {
   useCreateRazorpayOrderMutation, useVerifyRazorpayPaymentMutation, useCreateDemoOrderMutation, useProcessRefundMutation,
   useSubmitContactMessageMutation, useGetAllContactMessagesQuery, useSubscribeNewsletterMutation,
   useGetAllCouponsQuery, useCreateCouponMutation, useDeleteCouponMutation, useToggleCouponMutation, useValidateCouponMutation,
+  useGetToyCategoriesQuery, useGetAllToyCategoriesAdminQuery, useCreateToyCategoryMutation, useUpdateToyCategoryMutation, useDeleteToyCategoryMutation, useToggleToyCategoryMutation,
 } = apiSlice;

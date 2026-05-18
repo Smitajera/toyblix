@@ -6,15 +6,11 @@ import toast from 'react-hot-toast';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import SkeletonCard from '../components/SkeletonCard.jsx';
 import { apiSlice, useGetProductsQuery } from '../features/api/apiSlice.js';
+import useToyCategories from '../hooks/useToyCategories.js';
 import { toggleFavorite } from '../features/wishlist/wishlistSlice.js';
 import { addToCart, setPendingItem } from '../features/cart/cartSlice';
 
 const ageCategories = ["0-12 MO", "12-36 MO", "2-5 YRS", "5-7 YRS", "7-10 YRS", "10-14 YRS", "14+ YRS"];
-const tagCategories = [
-  "Soft Toys", "Wooden Wonders", "Remote Control Cars", "Arts & Crafts", 
-  "Mind Puzzles", "Metal Machines", "Outdoor Adventures", "Educational Games", "Building & STEM"
-];
-
 // NEW: Dynamic Specification Categories for the Sidebar
 const specCategories = [
   { name: 'Power Source', options: ['Battery Operated', 'USB Rechargeable', 'No Batteries Required'] },
@@ -67,6 +63,7 @@ const Checkbox = ({ label, checked, onChange }) => (
 const Shop = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { categories: tagCategories } = useToyCategories();
   const wishlistItems = useSelector((state) => state.wishlist?.wishlistItems || EMPTY_ARRAY);
   const prefetchProduct = apiSlice.usePrefetch('getProductById');
 

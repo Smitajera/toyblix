@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const SkuCounter = require('./SkuCounter');
+const ToyCategory = require('./ToyCategory');
 
 const CATEGORY_SKU_CODES = {
   'Soft Toys': 'SFT',
@@ -29,19 +30,26 @@ const cleanSkuSegment = (value, fallback) => {
   return cleaned || fallback;
 };
 
-const getCategorySkuCode = (tag) => {
-  if (CATEGORY_SKU_CODES[tag]) return CATEGORY_SKU_CODES[tag];
+const getCategorySkuCode = async (tag) => {
+  const primaryTag = String(tag || '').split(',')[0].trim();
 
-  const words = String(tag || '').match(/[A-Za-z0-9]+/g) || [];
+  if (primaryTag) {
+    const dbCategory = await ToyCategory.findOne({ name: primaryTag }).select('skuCode');
+    if (dbCategory?.skuCode) return dbCategory.skuCode;
+  }
+
+  if (CATEGORY_SKU_CODES[primaryTag]) return CATEGORY_SKU_CODES[primaryTag];
+
+  const words = primaryTag.match(/[A-Za-z0-9]+/g) || [];
   if (words.length > 1) return words.map((word) => word[0]).join('').toUpperCase().slice(0, 5);
 
-  return cleanSkuSegment(tag, 'GEN').slice(0, 5);
+  return cleanSkuSegment(primaryTag, 'GEN').slice(0, 5);
 };
 
 const getAgeSkuCode = (category) => cleanSkuSegment(category, 'ALL');
 
 const getNextSku = async (product) => {
-  const skuKey = `${getCategorySkuCode(product.tag)}-${getAgeSkuCode(product.category)}`;
+  const skuKey = `${await getCategorySkuCode(product.tag)}-${getAgeSkuCode(product.category)}`;
   const counter = await SkuCounter.findOneAndUpdate(
     { key: skuKey },
     { $inc: { seq: 1 } },

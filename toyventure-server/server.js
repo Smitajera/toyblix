@@ -41,7 +41,8 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const contactRoutes = require('./routes/contactRoutes');
-const couponRoutes = require('./routes/couponRoutes'); 
+const couponRoutes = require('./routes/couponRoutes');
+const toyCategoryRoutes = require('./routes/toyCategoryRoutes');
 
 dotenv.config();
 
@@ -113,7 +114,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/coupons', couponRoutes); 
+app.use('/api/coupons', couponRoutes);
+app.use('/api/toy-categories', toyCategoryRoutes);
 app.use('/api/chat', require('./routes/chatRoutes'));
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)){

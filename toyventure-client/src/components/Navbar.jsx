@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import Logo from './Logo';
 import ConfirmModal from './ConfirmModal';
 import { useGetAllOrdersQuery, useGetAllContactMessagesQuery } from '../features/api/apiSlice';
+import useToyCategories from '../hooks/useToyCategories';
 
 const searchPlaceholderPhrases = [
   'Browse toys...',
@@ -13,6 +14,7 @@ const searchPlaceholderPhrases = [
 ];
 
 const Navbar = () => {
+  const { categories: navToyCategories } = useToyCategories();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -558,10 +560,7 @@ const Navbar = () => {
                       Toy Categories
                     </h4>
                     <div className="space-y-1">
-                      {[
-                        'Soft Toys', 'Wooden Wonders', 'Remote Control Cars', 'Arts & Crafts',
-                        'Mind Puzzles', 'Metal Machines', 'Outdoor Adventures', 'Educational Games', 'Building & STEM'
-                      ].map((tag) => (
+                      {navToyCategories.map((tag) => (
                         <Link
                           key={tag}
                           to={`/shop?tag=${encodeURIComponent(tag)}`}

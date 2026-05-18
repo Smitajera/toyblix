@@ -7,6 +7,7 @@ import {
   useDeleteProductMutation
 } from '../features/api/apiSlice';
 import BulkUpload from '../components/admin/BulkUpload';
+import CatalogToyCategoryField from '../components/admin/CatalogToyCategoryField';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
@@ -462,31 +463,10 @@ const AdminCatalog = () => {
                       <input type="number" name="countInStock" value={editingProduct.countInStock} onChange={handleEditChange} required placeholder="50" className="w-full bg-white p-4 rounded-2xl focus:ring-2 focus:ring-red-600 outline-none border border-red-50 font-black text-red-950 text-xl transition-all" />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-black text-red-950/40 uppercase tracking-widest ml-1">Toy Category (Tags)</label>
-                      <div className="w-full bg-white p-4 rounded-2xl border border-red-50 flex flex-wrap gap-2">
-                        {["Soft Toys", "Wooden Wonders", "Remote Control Cars", "Arts & Crafts", "Mind Puzzles", "Metal Machines", "Outdoor Adventures", "Educational Games", "Building & STEM", "Light & Music"].map((catOption) => {
-                           const currentTags = editingProduct.tag ? editingProduct.tag.split(',').map(t => t.trim()).filter(Boolean) : [];
-                           const isSelected = currentTags.includes(catOption);
-                           return (
-                             <label key={catOption} className={`cursor-pointer px-4 py-2 rounded-xl border-2 transition-all font-bold text-sm ${isSelected ? 'border-red-600 bg-red-50 text-red-700' : 'border-red-100 bg-white text-red-950/50 hover:border-red-300'}`}>
-                               <input 
-                                 type="checkbox" 
-                                 className="hidden" 
-                                 checked={isSelected}
-                                 onChange={(e) => {
-                                    let newTags;
-                                    if (e.target.checked) newTags = [...currentTags, catOption];
-                                    else newTags = currentTags.filter(t => t !== catOption);
-                                    handleEditChange({ target: { name: 'tag', value: newTags.join(', ') } });
-                                 }} 
-                               />
-                               {catOption}
-                             </label>
-                           );
-                        })}
-                      </div>
-                    </div>
+                    <CatalogToyCategoryField
+                      tag={editingProduct.tag || ''}
+                      onTagChange={(value) => handleEditChange({ target: { name: 'tag', value } })}
+                    />
 
                     <div className="space-y-2">
                       <label className="text-sm font-black text-red-950/40 uppercase tracking-widest ml-1">Age Group</label>

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart, setPendingItem } from '../features/cart/cartSlice';
 import { useGetProductsQuery, useSubscribeNewsletterMutation } from '../features/api/apiSlice';
+import useToyCategories from '../hooks/useToyCategories';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 
@@ -49,6 +50,7 @@ const MagneticButton = ({ children, className, variant = 'dark', onClick }) => {
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { categories: runningCategories } = useToyCategories();
 
   const [email, setEmail] = useState('');
   const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
@@ -121,10 +123,6 @@ const Home = () => {
   }));
   const infiniteReviews = [...reviewCards, ...reviewCards];
 
-  const runningCategories = [ 
-    "Soft Toys", "Wooden Wonders", "Remote Control Cars", "Arts & Crafts", 
-    "Mind Puzzles", "Metal Machines", "Outdoor Adventures", "Educational Games", "Building & STEM", "Light & Music" 
-  ];
   const infiniteCategories = [...runningCategories, ...runningCategories];
 
   const handleAddToCart = (product) => {

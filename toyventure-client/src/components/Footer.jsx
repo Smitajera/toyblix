@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { useSubscribeNewsletterMutation } from '../features/api/apiSlice';
+import useToyCategories from '../hooks/useToyCategories';
 import toast from 'react-hot-toast';
 
 // Ensure this path matches where you saved your background image
 import footerBg from "../assets/footer-bg.png";
 
 const Footer = () => {
+  const { categories: footerCategories } = useToyCategories();
   const [email, setEmail] = useState('');
   const [subscribeNewsletter, { isLoading: isSubscribing }] = useSubscribeNewsletterMutation();
 
@@ -116,11 +118,11 @@ const Footer = () => {
           <div className="lg:col-span-3 lg:pl-4">
             <h4 className="text-slate-900 font-black mb-8 uppercase text-xs tracking-widest drop-shadow-sm">Popular searches</h4>
             <ul className="space-y-5 text-slate-600 text-sm font-bold">
-              <li><Link to="/shop?tag=Soft%20Toys" className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">Soft Toys</Link></li>
-              <li><Link to="/shop?tag=Wooden%20Wonders" className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">Wooden Wonders</Link></li>
-              <li><Link to="/shop?tag=Remote%20Control%20Cars" className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">Remote Control Cars</Link></li>
-              <li><Link to="/shop?tag=Arts%20%26%20Crafts" className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">Arts & Crafts</Link></li>
-              <li><Link to="/shop?tag=Educational%20Games" className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">Educational Games</Link></li>
+              {footerCategories.slice(0, 5).map((tag) => (
+                <li key={tag}>
+                  <Link to={`/shop?tag=${encodeURIComponent(tag)}`} className="hover:text-red-600 hover:translate-x-1 inline-block transition-all">{tag}</Link>
+                </li>
+              ))}
             </ul>
           </div>
 
