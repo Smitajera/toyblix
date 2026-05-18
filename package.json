@@ -1,0 +1,15 @@
+{
+  "name": "toyventure",
+  "version": "1.0.0",
+  "description": "ToyVenture E-commerce Monorepo",
+  "scripts": {
+    "install-server": "npm install --prefix toyventure-server",
+    "install-client": "npm install --prefix toyventure-client",
+    "build-client": "npm run build --prefix toyventure-client",
+    "build": "npm run install-server && npm run install-client && npm run build-client",
+    "start": "node toyventure-server/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

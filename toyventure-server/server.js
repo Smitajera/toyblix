@@ -127,9 +127,18 @@ if (!fs.existsSync(uploadsDir)){
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/', (req, res) => {
-  res.send('ToyBlix API is running smoothly...');
-});
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../toyventure-client/dist');
+  app.use(express.static(clientBuildPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(clientBuildPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.send('ToyBlix API is running smoothly in development...');
+  });
+}
 
 // Error Handling Middlewares
 if (process.env.SENTRY_DSN) {
