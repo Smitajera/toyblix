@@ -33,6 +33,7 @@ import Terms from './Pages/Terms';
 // Import Admin Pages
 import AdminDashboard from './Pages/AdminDashboard';
 import AdminCatalog from './Pages/AdminCatalog';
+import ComboDetail from './Pages/ComboDetail';
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/combo/:id" element={<ComboDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/auth" element={<Auth />} />

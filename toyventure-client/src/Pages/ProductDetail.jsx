@@ -8,7 +8,8 @@ import {
   useGetProductsQuery, 
   useCreateReviewMutation, 
   useGetMyOrdersQuery,
-  useNotifyMeWhenAvailableMutation 
+  useNotifyMeWhenAvailableMutation,
+  useGetCombosQuery
 } from '../features/api/apiSlice';
 import { addToCart, setPendingItem } from '../features/cart/cartSlice';
 import { toggleFavorite } from '../features/wishlist/wishlistSlice'; 
@@ -40,6 +41,12 @@ const ProductDetail = () => {
 
   const { data: allProductsData } = useGetProductsQuery({ limit: 8 }, { skip: !product }); 
   const { data: myOrders } = useGetMyOrdersQuery(undefined, { skip: !userInfo });
+  const { data: combos = [] } = useGetCombosQuery({});
+
+  const relatedCombos = combos.filter(c => c.items?.some(item => {
+      const prodId = item.product?._id || item.product;
+      return String(prodId) === String(id);
+  }));
   
   const [createReview, { isLoading: isReviewLoading }] = useCreateReviewMutation();
   const [notifyMeWhenAvailable, { isLoading: isNotifying }] = useNotifyMeWhenAvailableMutation(); 
@@ -642,6 +649,57 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* COMBOS UPSELL SECTION */}
+        {relatedCombos.length > 0 && (
+          <div className="mt-8 mb-8 pt-10 border-t border-slate-200">
+             <h2 className="text-2xl font-black text-red-950 mb-6 flex items-center gap-2">
+               <span className="material-symbols-outlined text-purple-500 text-[28px]">redeem</span> 
+               Make it a Bundle & Save!
+             </h2>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedCombos.map(combo => {
+                   const comboDiscount = getDiscountPercent(combo.price, combo.oldPrice);
+                   return (
+                    <Link
+                      key={combo._id}
+                      to={`/combo/${combo._id}`}
+                      className="group bg-white rounded-[2rem] border border-red-50 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col"
+                    >
+                      <div className="aspect-[4/3] bg-red-50/50 overflow-hidden relative">
+                        <img
+                          src={resolveImage(combo.img)}
+                          alt={combo.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+                          <div className="bg-purple-100 text-purple-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm w-max">
+                             Combo Deal
+                          </div>
+                          {comboDiscount > 0 && (
+                            <div className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm w-max">
+                               Save {comboDiscount}%
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-5 flex-1 flex flex-col">
+                        <h4 className="font-black text-red-950 mt-1 line-clamp-2">{combo.title}</h4>
+                        <p className="text-xs text-red-950/50 font-bold mt-1 mb-3">{combo.items?.length || 0} items included</p>
+                        <div className="mt-auto flex items-end justify-between">
+                            <div>
+                               <p className="text-xl font-black text-red-950">₹{Number(combo.price).toLocaleString('en-IN')}</p>
+                               {combo.oldPrice > 0 && <p className="text-xs text-slate-400 font-bold line-through">₹{Number(combo.oldPrice).toLocaleString('en-IN')}</p>}
+                            </div>
+                            <span className="bg-red-600 text-white text-[11px] font-black uppercase px-4 py-2 rounded-full hover:bg-red-700 shadow-sm">View Bundle</span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+             </div>
+          </div>
+        )}
 
         {/* REVIEWS SECTION */}
         <div id="reviews-section" className="mt-20 border-t border-white pt-16 grid grid-cols-1 lg:grid-cols-12 gap-12">

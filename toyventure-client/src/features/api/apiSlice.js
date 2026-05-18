@@ -74,7 +74,7 @@ const clearProductCache = () => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: customBaseQuery, 
-  tagTypes: ['Product', 'Order', 'User', 'Contact', 'Coupon', 'ToyCategory'],
+  tagTypes: ['Product', 'Order', 'User', 'Contact', 'Coupon', 'ToyCategory', 'Combo'],
   endpoints: (builder) => ({
     
    getProducts: builder.query({
@@ -193,6 +193,34 @@ export const apiSlice = createApi({
       invalidatesTags: ['ToyCategory'],
     }),
 
+    getCombos: builder.query({
+      query: ({ ageGroup = '', isAdmin = '' } = {}) => {
+        let url = '/combos';
+        const params = [];
+        if (ageGroup) params.push(`ageGroup=${encodeURIComponent(ageGroup)}`);
+        if (isAdmin) params.push(`isAdmin=${isAdmin}`);
+        if (params.length) url += `?${params.join('&')}`;
+        return url;
+      },
+      providesTags: ['Combo'],
+    }),
+    getComboById: builder.query({
+      query: ({ id, isAdmin = '' }) => `/combos/${id}${isAdmin ? '?isAdmin=true' : ''}`,
+      providesTags: (result, error, arg) => [{ type: 'Combo', id: arg.id }],
+    }),
+    createCombo: builder.mutation({
+      query: (data) => ({ url: '/combos', method: 'POST', body: data }),
+      invalidatesTags: ['Combo'],
+    }),
+    updateCombo: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `/combos/${id}`, method: 'PUT', body: data }),
+      invalidatesTags: ['Combo'],
+    }),
+    deleteCombo: builder.mutation({
+      query: (id) => ({ url: `/combos/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Combo'],
+    }),
+
   }),
 });
 
@@ -208,4 +236,5 @@ export const {
   useSubmitContactMessageMutation, useGetAllContactMessagesQuery, useSubscribeNewsletterMutation,
   useGetAllCouponsQuery, useCreateCouponMutation, useDeleteCouponMutation, useToggleCouponMutation, useValidateCouponMutation,
   useGetToyCategoriesQuery, useGetAllToyCategoriesAdminQuery, useCreateToyCategoryMutation, useUpdateToyCategoryMutation, useDeleteToyCategoryMutation, useToggleToyCategoryMutation,
+  useGetCombosQuery, useGetComboByIdQuery, useCreateComboMutation, useUpdateComboMutation, useDeleteComboMutation,
 } = apiSlice;

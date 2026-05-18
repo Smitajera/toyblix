@@ -7,6 +7,7 @@ import ScrollReveal from '../components/ScrollReveal.jsx';
 import SkeletonCard from '../components/SkeletonCard.jsx';
 import { apiSlice, useGetProductsQuery } from '../features/api/apiSlice.js';
 import useToyCategories from '../hooks/useToyCategories.js';
+import ComboShowcase from '../components/ComboShowcase.jsx';
 import { toggleFavorite } from '../features/wishlist/wishlistSlice.js';
 import { addToCart, setPendingItem } from '../features/cart/cartSlice';
 
@@ -75,6 +76,7 @@ const Shop = () => {
   const initialSpecs = searchParams.get('specs'); 
   const initialMinPrice = searchParams.get('minPrice');
   const initialMaxPrice = searchParams.get('maxPrice');
+  const showCombosView = searchParams.get('view') === 'combos';
   
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [isTyping, setIsTyping] = useState(false); 
@@ -492,9 +494,28 @@ const Shop = () => {
 
           <ScrollReveal delay={50} className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-on-surface tracking-tighter">{getPageTitle()}</h1>
-              {!isLoading && <p className="text-zinc-500 font-medium mt-1">Showing {filteredProducts.length} items of {responseData?.totalProducts || 0} total</p>}
+              <h1 className="text-4xl md:text-5xl font-black text-on-surface tracking-tighter">
+                {showCombosView ? 'Combo Deals' : getPageTitle()}
+              </h1>
+              {!showCombosView && !isLoading && <p className="text-zinc-500 font-medium mt-1">Showing {filteredProducts.length} items of {responseData?.totalProducts || 0} total</p>}
+              
+              <div className="flex items-center bg-zinc-200/50 p-1 rounded-full w-max mt-4 border border-zinc-200">
+                <button 
+                  onClick={() => { const p = new URLSearchParams(searchParams); p.delete('view'); setSearchParams(p); }}
+                  className={`px-5 py-1.5 rounded-full text-sm font-bold transition-all ${!showCombosView ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
+                >
+                  Individual Toys
+                </button>
+                <button 
+                  onClick={() => { const p = new URLSearchParams(searchParams); p.set('view', 'combos'); setSearchParams(p); }}
+                  className={`px-5 py-1.5 rounded-full text-sm font-bold transition-all flex items-center gap-1.5 ${showCombosView ? 'bg-white shadow-sm text-red-600' : 'text-zinc-500 hover:text-zinc-700'}`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">redeem</span> Combo Deals
+                </button>
+              </div>
             </div>
+
+            {!showCombosView && (
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto relative z-10">
               <button onClick={openSidebar} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-inner border-none backdrop-blur-md bg-white/80 text-zinc-700 hover:bg-white focus:outline-none">
@@ -559,12 +580,25 @@ const Shop = () => {
                 )}
               </form>
             </div>
+          )}
           </ScrollReveal>
 
           {/* ========================================== */}
           {/* GOOGLE-STYLE "DID YOU MEAN?" BANNER */}
           {/* ========================================== */}
-          {responseData?.suggestedTerm && !exactSearch && !isLoading && (
+          {showCombosView && (
+            <ComboShowcase compact hideHeader={true} />
+          )}
+
+          {!showCombosView && activeFilters.selectedAges.length > 0 && (
+            <div className="mt-8 mb-4">
+              <h2 className="text-xl font-black text-red-950 mb-[-1rem] px-6 max-w-[1300px] mx-auto flex items-center gap-2"><span className="material-symbols-outlined text-purple-500">redeem</span> Recommended Combo Deals</h2>
+              <ComboShowcase compact hideHeader={true} filterAges={activeFilters.selectedAges} />
+              <div className="h-px bg-slate-200 my-8 w-full max-w-[1300px] mx-auto"></div>
+            </div>
+          )}
+
+          {!showCombosView && responseData?.suggestedTerm && !exactSearch && !isLoading && (
             <ScrollReveal className="mb-8 bg-red-50/50 border border-red-100 p-5 rounded-[1.5rem] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-zinc-600 font-medium text-sm md:text-base">
@@ -578,7 +612,7 @@ const Shop = () => {
             </ScrollReveal>
           )}
 
-          {(!isTyping && isLoading && filteredProducts.length === 0) ? (
+          {!showCombosView && ((!isTyping && isLoading && filteredProducts.length === 0) ? (
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 gap-y-8 mt-4">
               {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
@@ -671,9 +705,9 @@ const Shop = () => {
                 );
               })}
             </div>
-          )}
+          ))}
 
-          {!isLoading && totalPages > 1 && (
+          {!showCombosView && !isLoading && totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 sm:gap-6 mt-16 pb-8">
               <button onClick={() => setPage(page > 1 ? page - 1 : 1)} disabled={page === 1} className={`px-5 py-3 rounded-full font-black flex items-center gap-2 transition-all ${page === 1 ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed' : 'bg-white text-zinc-800 shadow-md hover:-translate-y-1'}`}><span className="material-symbols-outlined text-[20px]">arrow_back</span> Prev</button>
               <span className="font-bold text-zinc-600 bg-white/50 px-4 py-2 rounded-full border border-white shadow-sm">Page {page} of {totalPages}</span>

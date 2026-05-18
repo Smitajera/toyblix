@@ -634,6 +634,14 @@ const Navbar = () => {
                         <span className="material-symbols-outlined text-[18px] text-green-500">local_offer</span>
                         Budget Picks
                       </Link>
+                      <Link
+                        to="/shop?view=combos"
+                        onClick={() => setIsShopMegaOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-white hover:text-red-600 hover:shadow-sm transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[18px] text-purple-500">redeem</span>
+                        Combo Deals
+                      </Link>
                     </div>
                   </div>
                 </div>

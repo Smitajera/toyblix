@@ -8,6 +8,7 @@ import {
 } from '../features/api/apiSlice';
 import BulkUpload from '../components/admin/BulkUpload';
 import CatalogToyCategoryField from '../components/admin/CatalogToyCategoryField';
+import AdminComboPanel from '../components/admin/AdminComboPanel';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 const ASSET_BASE_URL = import.meta.env.VITE_ASSET_BASE_URL || API_BASE_URL.replace(/\/api\/?$/, '');
 
 const AdminCatalog = () => {
+  const [catalogTab, setCatalogTab] = useState('products');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false); 
   const [isCreatingNew, setIsCreatingNew] = useState(false); 
@@ -295,8 +297,37 @@ const AdminCatalog = () => {
     <main className="pt-28 pb-24 min-h-screen bg-surface bg-hero-glow relative fade-in">
       <div className="absolute inset-0 doodle-bg opacity-30 pointer-events-none z-0"></div>
       <div className="max-w-[1300px] mx-auto px-6 relative z-10">
-        
-        {isFormOpen ? (
+
+        {!isFormOpen && (
+          <div className="flex gap-2 mb-6 p-1.5 bg-white/60 rounded-2xl border border-red-50 w-fit">
+            <button type="button" onClick={() => setCatalogTab('products')} className={`px-5 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${catalogTab === 'products' ? 'bg-red-600 text-white shadow-md' : 'text-red-950/50 hover:text-red-950'}`}>
+              <span className="material-symbols-outlined text-[18px]">toys</span> Products
+            </button>
+            <button type="button" onClick={() => setCatalogTab('combos')} className={`px-5 py-2.5 rounded-xl font-black text-sm transition-all flex items-center gap-2 ${catalogTab === 'combos' ? 'bg-red-600 text-white shadow-md' : 'text-red-950/50 hover:text-red-950'}`}>
+              <span className="material-symbols-outlined text-[18px]">inventory_2</span> Age Combos
+            </button>
+          </div>
+        )}
+
+        {catalogTab === 'combos' && !isFormOpen ? (
+          <div>
+            <div className="mb-8">
+              <Link to="/admin" className="inline-flex items-center gap-2 text-sm font-bold text-red-950/50 hover:text-red-600 mb-4 transition-colors">
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span> Back to Dashboard
+              </Link>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/60 p-8 rounded-[2.5rem] border border-white shadow-sm">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-black text-red-950 tracking-tight flex items-center gap-3">
+                    <span className="material-symbols-outlined text-red-600 text-[36px]">inventory_2</span>
+                    Age Combos
+                  </h1>
+                  <p className="text-red-950/50 font-bold mt-2">Curated bundles for 0–12 mo, 12–36 mo, and 5–7 yrs.</p>
+                </div>
+              </div>
+            </div>
+            <AdminComboPanel />
+          </div>
+        ) : isFormOpen ? (
           <div className="animate-[fadeIn_0.3s_ease-out]">
             <div className="mb-8">
               <button onClick={handleCancelForm} className="inline-flex items-center gap-2 text-sm font-bold text-red-950/50 hover:text-red-600 mb-4 transition-colors">

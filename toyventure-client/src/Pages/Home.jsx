@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart, setPendingItem } from '../features/cart/cartSlice';
 import { useGetProductsQuery, useSubscribeNewsletterMutation } from '../features/api/apiSlice';
 import useToyCategories from '../hooks/useToyCategories';
+import ComboShowcase from '../components/ComboShowcase';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 
@@ -311,6 +312,8 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      <ComboShowcase />
 
       {/* ================= EXPLORE POPULAR TOY SET ================= */}
       <section className="bg-emerald-100 py-12 px-6 relative z-20 border-b border-emerald-200">
